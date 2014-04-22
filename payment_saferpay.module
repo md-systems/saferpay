@@ -4,3 +4,139 @@
  * @file
  * Bootstrap file of the payment_saferpay module.
  */
+
+/**
+ * Returns the URL to post the credit card information to.
+ *
+ * @param array $settings
+ *   Array of payment method settings
+ *
+ * @return string
+ *   The URL to point the credit card form action to, FALSE in case of an error.
+ */
+function _payment_saferpay_business_initpay($settings) {
+  $data = array();
+
+  // @todo: Check this:
+  // * Für die Verwendung von CARDREFID="new" muss bei Saferpay zunächst ein numerischer Startwert für den
+  // Account hinterlegt werden. Kontaktieren Sie hierfür integration@saferpay.com.
+  $data['CARDREFID'] = 'new';
+
+  $data['FAILLINK'] = url('', array('absolute' => TRUE));
+  $data['SUCCESSLINK'] = $data['FAILLINK'];
+  $data['BACKLINK'] = $data['FAILLINK'];
+
+  return payment_saferpay_initpay($settings, $data);
+}
+
+/**
+ * Returns the initial payment transaction URL to redirect or post to.
+ *
+ * Deals with the arguments common to both payment methods.
+ *
+ * @param $settings
+ *   Array of payment method settings.
+ * @param array $data
+ *   Array of additional arguments.
+ *
+ * @return string
+ *   URL to redirect the user to make payment.
+ */
+function payment_saferpay_initpay($settings, array $data = array()) {
+
+  $data['ACCOUNTID'] = $settings['account_id'];
+
+  if (!empty($settings['password'])) {
+    $data['spPassword'] = $settings['password'];
+  }
+
+  // Saferpay only supports en, de, it and fr. For everything else, fall back to
+  // en.
+  $language = \Drupal::languageManager()->getCurrentLanguage()->id;
+  $data['LANGID'] = in_array($language, array('en', 'de', 'fr', 'it')) ? $language : 'EN';
+
+  $url = url('https://www.saferpay.com/hosting/CreatePayInit.asp', array('external' => TRUE, 'query' => $data));
+  $return = payment_saferpay_process_url($url);
+  if (strpos($return, 'ERROR') !== FALSE) {
+    drupal_set_message(t('An error occurred during payment: @error.', array('@error' => $return)), 'error');
+    return FALSE;
+  }
+  return $return;
+}
+
+/**
+ * Proxy for saferpay's requests.
+ *
+ * @param $url
+ *   The webservice prepared url, i.e. initpay, verifypayconfirm, paycomplete
+ *
+ * @return bool
+ *   Webservice response.
+ */
+function payment_saferpay_process_url($url) {
+  $ch = curl_init($url);
+  curl_setopt($ch, CURLOPT_PORT, 443);
+  curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, FALSE);
+  curl_setopt($ch, CURLOPT_HEADER, 0);
+  curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
+  $sReturn = curl_exec($ch);
+  curl_close($ch);
+  return $sReturn;
+}
+
+/**
+ * Authorize and optionally settle the payment for an order object.
+ *
+ * This is a user interface function which will use drupal_goto() to redirect
+ * the user, do not use this if there is no user interface involved.x
+ *
+ * @param $order
+ *   The order object. Needs to have commerce_saferpay_card_ref_id defined in
+ *   $order->data and optionally commerce_saferpay_mpi_session_id.
+ */
+function commerce_saferpay_business_pay_order($order) {
+  $payment_method = commerce_payment_method_instance_load($order->data['payment_method']);
+  $transaction = commerce_saferpay_business_authorize_payment($order, $payment_method['settings'], $payment_method['method_id']);
+  if ($transaction !== FALSE) {
+    $complete_response = commerce_saferpay_business_settle_payment($transaction, $payment_method['settings']);
+    if ($complete_response === TRUE) {
+      $cardonfile_exists = module_exists('commerce_cardonfile');
+      if ($cardonfile_exists && isset($order->data['cardonfile']) && $order->data['cardonfile'] == 'new') {
+        $card_data = array(
+          'uid' => $order->uid,
+          'payment_method' => $payment_method['method_id'],
+          'instance_id' => $payment_method['instance_id'],
+          'remote_id' => $order->data['commerce_saferpay_card_ref_id'],
+          'card_type' => $order->data['commerce_saferpay_card_type'],
+          'card_name' => $order->data['commerce_saferpay_card_holder'],
+          'card_number' => $order->data['commerce_saferpay_card_number'],
+          'card_exp_month' => $order->data['commerce_saferpay_expiry_month'],
+          'card_exp_year' => $order->data['commerce_saferpay_expiry_year'],
+          'status' => 1,
+        );
+        // Save new card on file.
+        commerce_cardonfile_data_save($card_data);
+      }
+
+      // If the user has selected to use an existing card we have to set the
+      // Order Status to payment manually because we skipped the payment
+      // redirect.
+      if ($cardonfile_exists && !empty($order->data['cardonfile']) && $order->data['cardonfile'] !== 'new') {
+        commerce_order_status_update($order, 'checkout_payment', FALSE, "Payment via Cardonfile");
+      }
+
+      // Send the customer on to the next checkout page.
+      commerce_payment_redirect_pane_next_page($order);
+      drupal_goto(commerce_checkout_order_uri($order));
+    }
+    else {
+      // Display error and redirect back.
+      drupal_set_message(t('An error occured while settling the payment: @error.', array('@error' => commerce_saferpay_business_error())), 'error');
+      drupal_goto(commerce_checkout_order_uri($order));
+    }
+  }
+  else {
+    drupal_set_message(t('An error occured while processing the payment: @error.', array('@error' => commerce_saferpay_business_error())), 'error');
+    drupal_goto(commerce_checkout_order_uri($order));
+  }
+}
