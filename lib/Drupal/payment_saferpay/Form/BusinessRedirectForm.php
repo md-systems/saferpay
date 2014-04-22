@@ -9,6 +9,7 @@ namespace Drupal\payment_saferpay\Form;
 use Drupal\Core\Form\FormBase;
 use Drupal\monitoring\Sensor\SensorInfo;
 use Drupal\monitoring\Sensor\SensorManager;
+use Drupal\payment\Plugin\Payment\Method\PaymentMethodManager;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -17,20 +18,18 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 class BusinessRedirectForm extends FormBase {
 
   /**
-   * Stores the sensor manager.
+   * Stores the payment manager.
    *
-   * @var \Drupal\monitoring\Sensor\SensorManager
+   * @var \Drupal\payment\Plugin\Payment\Method\PaymentMethodManager
    */
-  protected $sensorManager;
+  protected $paymentManager;
 
   /**
-   * Constructs a \Drupal\monitoring\Form\SensorSettingsForm object.
-   *
-   * @param \Drupal\monitoring\Sensor\SensorManager $sensor_manager
-   *   The sensor manager service.
+   * @param \Drupal\payment\Plugin\Payment\Method\PaymentMethodManager $payment_manager
+   *   The payment manager service.
    */
-  public function __construct(SensorManager $sensor_manager) {
-    $this->sensorManager = $sensor_manager;
+  public function __construct(PaymentMethodManager $payment_manager) {
+    $this->paymentManager = $payment_manager;
   }
 
   /**
@@ -38,7 +37,7 @@ class BusinessRedirectForm extends FormBase {
    */
   public static function create(ContainerInterface $container) {
     return new static(
-      $container->get('monitoring.sensor_manager')
+      $container->get('plugin.manager.payment.method')
     );
   }
 
@@ -58,10 +57,10 @@ class BusinessRedirectForm extends FormBase {
       drupal_set_message(t('Saferpay Business has not been configured. The test account is used. Visit the <a href="!url">payment settings</a> to change this.', array('!url' => url('admin/commerce/config/payment-methods'))), 'warning');
     }
 
-    $url = _payment_saferpay_business_initpay($payment_method['settings']);
-    if (empty($url)) {
-      return array();
-    }
+//    $url = _payment_saferpay_business_initpay($payment_method['settings']);
+//    if (empty($url)) {
+//      return array();
+//    }
 
 //    $form['#method'] = 'post';
 //    $form['#action'] = $url;
@@ -148,7 +147,11 @@ class BusinessRedirectForm extends FormBase {
   }
 
   public function submitForm(array &$form, array &$form_state) {
-
+    $method = $this->paymentManager->createInstance('payment_saferpay_business');
+    $payment = entity_create('payment', array(
+      'bundle' => 'payment_saferpay_business',
+    ));
+    $method->executePayment($payment);
   }
 
   /**

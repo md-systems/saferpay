@@ -1,7 +1,7 @@
 payment_saferpay.business:
   path: '/saferpay/business'
   defaults:
-    _form: '\Drupal\payment_saferpay\Controller\BusinessRedirectForm'
+    _form: '\Drupal\payment_saferpay\Form\BusinessRedirectForm'
     _title: Saferpay Business
   requirements:
     _access: 'TRUE'
