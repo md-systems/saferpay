@@ -5,16 +5,21 @@
  * Bootstrap file of the payment_saferpay module.
  */
 
+define('PAYMENT_SAFERPAY_ECI_NO_LIABILITYSHIFT', 0);
+define('PAYMENT_SAFERPAY_ECI_3D_AUTHENTICATION', 1);
+define('PAYMENT_SAFERPAY_ECI_3D_NO_AUTHENTICATION', 2);
+
 /**
  * Returns the URL to post the credit card information to.
  *
  * @param array $settings
  *   Array of payment method settings
+ * @param $payment
  *
  * @return string
  *   The URL to point the credit card form action to, FALSE in case of an error.
  */
-function _payment_saferpay_business_initpay($settings) {
+function _payment_saferpay_business_initpay($settings, $payment) {
   $data = array();
 
   // @todo: Check this:
@@ -22,7 +27,7 @@ function _payment_saferpay_business_initpay($settings) {
   // Account hinterlegt werden. Kontaktieren Sie hierfür integration@saferpay.com.
   $data['CARDREFID'] = 'new';
 
-  $data['FAILLINK'] = url('', array('absolute' => TRUE));
+  $data['FAILLINK'] = url('saferpay/business/scd/' . $payment->id(), array('absolute' => TRUE));
   $data['SUCCESSLINK'] = $data['FAILLINK'];
   $data['BACKLINK'] = $data['FAILLINK'];
 
@@ -82,61 +87,4 @@ function payment_saferpay_process_url($url) {
   $sReturn = curl_exec($ch);
   curl_close($ch);
   return $sReturn;
-}
-
-/**
- * Authorize and optionally settle the payment for an order object.
- *
- * This is a user interface function which will use drupal_goto() to redirect
- * the user, do not use this if there is no user interface involved.x
- *
- * @param $order
- *   The order object. Needs to have commerce_saferpay_card_ref_id defined in
- *   $order->data and optionally commerce_saferpay_mpi_session_id.
- */
-function commerce_saferpay_business_pay_order($order) {
-  $payment_method = commerce_payment_method_instance_load($order->data['payment_method']);
-  $transaction = commerce_saferpay_business_authorize_payment($order, $payment_method['settings'], $payment_method['method_id']);
-  if ($transaction !== FALSE) {
-    $complete_response = commerce_saferpay_business_settle_payment($transaction, $payment_method['settings']);
-    if ($complete_response === TRUE) {
-      $cardonfile_exists = module_exists('commerce_cardonfile');
-      if ($cardonfile_exists && isset($order->data['cardonfile']) && $order->data['cardonfile'] == 'new') {
-        $card_data = array(
-          'uid' => $order->uid,
-          'payment_method' => $payment_method['method_id'],
-          'instance_id' => $payment_method['instance_id'],
-          'remote_id' => $order->data['commerce_saferpay_card_ref_id'],
-          'card_type' => $order->data['commerce_saferpay_card_type'],
-          'card_name' => $order->data['commerce_saferpay_card_holder'],
-          'card_number' => $order->data['commerce_saferpay_card_number'],
-          'card_exp_month' => $order->data['commerce_saferpay_expiry_month'],
-          'card_exp_year' => $order->data['commerce_saferpay_expiry_year'],
-          'status' => 1,
-        );
-        // Save new card on file.
-        commerce_cardonfile_data_save($card_data);
-      }
-
-      // If the user has selected to use an existing card we have to set the
-      // Order Status to payment manually because we skipped the payment
-      // redirect.
-      if ($cardonfile_exists && !empty($order->data['cardonfile']) && $order->data['cardonfile'] !== 'new') {
-        commerce_order_status_update($order, 'checkout_payment', FALSE, "Payment via Cardonfile");
-      }
-
-      // Send the customer on to the next checkout page.
-      commerce_payment_redirect_pane_next_page($order);
-      drupal_goto(commerce_checkout_order_uri($order));
-    }
-    else {
-      // Display error and redirect back.
-      drupal_set_message(t('An error occured while settling the payment: @error.', array('@error' => commerce_saferpay_business_error())), 'error');
-      drupal_goto(commerce_checkout_order_uri($order));
-    }
-  }
-  else {
-    drupal_set_message(t('An error occured while processing the payment: @error.', array('@error' => commerce_saferpay_business_error())), 'error');
-    drupal_goto(commerce_checkout_order_uri($order));
-  }
 }

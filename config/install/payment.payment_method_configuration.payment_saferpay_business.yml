@@ -1,0 +1,9 @@
+id: payment_saferpay_business
+label: 'Saferpay business'
+ownerId: 1
+pluginConfiguration:
+  message_text: 'Saferpay business'
+  message_text_format: plain_text
+  status: payment_pending
+pluginId: payment_saferpay_business
+status: false

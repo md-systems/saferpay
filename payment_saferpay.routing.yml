@@ -5,3 +5,17 @@ payment_saferpay.business:
     _title: Saferpay Business
   requirements:
     _access: 'TRUE'
+
+payment_saferpay.business_scd_payemnt:
+  path: '/saferpay/business/scd/{payment}'
+  defaults:
+    _content: '\Drupal\payment_saferpay\Form\BusinessRedirectForm::processSCDResponse'
+  requirements:
+    _access: 'TRUE'
+
+payment_saferpay.business_mpi_payemnt:
+  path: '/saferpay/business/mpi/{payment}'
+  defaults:
+    _content: '\Drupal\payment_saferpay\Form\BusinessRedirectForm::processMPIResponse'
+  requirements:
+    _access: 'TRUE'

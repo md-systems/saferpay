@@ -12,8 +12,9 @@ use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\Core\Utility\Token;
 use Drupal\payment\Entity\PaymentInterface;
 use Drupal\payment\Plugin\Payment\Method\PaymentMethodBase;
-use Drupal\payment\Plugin\Payment\Status\PaymentStatusManagerInterface;
+use Drupal\payment\Plugin\Payment\Status\PaymentStatusManager;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 
 /**
  * Saferpay Business payment method.
@@ -43,116 +44,67 @@ class SaferpayBusinessMethod extends PaymentMethodBase implements ContainerFacto
    *   The plugin implementation definition.
    * @param \Drupal\Core\Extension\ModuleHandlerInterface $module_handler
    *   The module handler.
+   * @param \Symfony\Component\EventDispatcher\EventDispatcherInterface $event_dispatcher
+   *   The event dispatcher.
    * @param \Drupal\Core\Utility\Token $token
    *   The token API.
-   * @param \Drupal\payment\Plugin\Payment\Status\PaymentStatusManagerInterface
+   * @param \Drupal\payment\Plugin\Payment\Status\PaymentStatusManager $payment_status_manager
    *   The payment status manager.
    */
-  public function __construct(array $configuration, $plugin_id, array $plugin_definition, ModuleHandlerInterface $module_handler, Token $token, PaymentStatusManagerInterface $payment_status_manager) {
+  public function __construct(array $configuration, $plugin_id, array $plugin_definition, ModuleHandlerInterface $module_handler, EventDispatcherInterface $event_dispatcher, Token $token, PaymentStatusManager $payment_status_manager) {
     $configuration += $this->defaultConfiguration();
-    parent::__construct($configuration, $plugin_id, $plugin_definition, $module_handler, $token);
+    parent::__construct($configuration, $plugin_id, $plugin_definition, $module_handler, $event_dispatcher, $token);
     $this->paymentStatusManager = $payment_status_manager;
+
+    $this->pluginDefinition['message_text'] = '';
+    $this->pluginDefinition['message_text_format'] = '';
   }
 
   /**
    * {@inheritdoc}
    */
   public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition) {
-    return new static($configuration, $plugin_id, $plugin_definition, $container->get('module_handler'), $container->get('token'), $container->get('plugin.manager.payment.status'));
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function currencies() {
-    return TRUE;
-  }
-
-  /**
-   * Gets the ID of the payment method this plugin is for.
-   *
-   * @return string
-   */
-  public function getEntityId() {
-    return $this->pluginDefinition['entity_id'];
-  }
-
-  /**
-   * Gets the final payment status.
-   *
-   * @return string
-   *   The plugin ID of the payment status to set.
-   */
-  public function getStatus() {
-    return $this->pluginDefinition['status'];
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function executePayment(PaymentInterface $payment) {
-    $payment->setStatus($this->paymentStatusManager->createInstance($this->getStatus()));
-    $payment->save();
-    $payment->getPaymentType()->resumeContext();
+    return new static(
+      $configuration,
+      $plugin_id,
+      $plugin_definition,
+      $container->get('module_handler'),
+      $container->get('event_dispatcher'),
+      $container->get('token'),
+      $container->get('plugin.manager.payment.status')
+    );
   }
 
   /**
    * {@inheritdoc}
    */
   public static function getOperations($plugin_id) {
-    return;
-    // @todo Use the payment method operations provider when
-    //   https://drupal.org/node/1839516 is committed.
-    // Strip the base plugin ID and the colon.
-    $entity_id = substr($plugin_id, 14);
-    $payment_method = \Drupal::entityManager()->getStorage('payment_method')->load('another_saferpa');
-    $operations = array();
-    if ($payment_method->access('update')) {
-      $operations['update'] = array(
-        'title' => t('Edit configuration'),
-        'route_name' => 'payment.payment_method.edit',
-        'route_parameters' => array(
-          'payment_method' => $entity_id,
-        ),
-      );
-    }
-    if ($payment_method->access('delete')) {
-      $operations['delete'] = array(
-        'title' => t('Delete configuration'),
-        'route_name' => 'payment.payment_method.delete',
-        'route_parameters' => array(
-          'payment_method' => $entity_id,
-        ),
-      );
-    }
-    if ($payment_method->access('enable')) {
-      $operations['enable'] = array(
-        'title' => t('Enable configuration'),
-        'route_name' => 'payment.payment_method.enable',
-        'route_parameters' => array(
-          'payment_method' => $entity_id,
-        ),
-      );
-    }
-    if ($payment_method->access('disable')) {
-      $operations['disable'] = array(
-        'title' => t('Disable configuration'),
-        'route_name' => 'payment.payment_method.disable',
-        'route_parameters' => array(
-          'payment_method' => $entity_id,
-        ),
-      );
-    }
+    return array();
+  }
 
-    // Set the destinations, as we re-use existing operations routes elsewhere,
-    // but we want users to end up at the same page as where these links are
-    // displayed.
-    foreach (array('enable', 'disable') as $operation) {
-      if (isset($operations[$operation])) {
-        $operations[$operation]['query']['destination'] = \Drupal::request()->attributes->get('_system_path');
-      }
-    }
+  /**
+   * Performs the actual payment execution.
+   *
+   * @param \Drupal\payment\Entity\PaymentInterface $payment
+   */
+  protected function doExecutePayment(PaymentInterface $payment) {
+    $payment->setStatus($this->paymentStatusManager->createInstance('finished'));
+    $payment->save();
+    $payment->getPaymentType()->resumeContext();
+  }
 
-    return $operations;
+  /**
+   * Returns the supported currencies.
+   *
+   * @return array|true
+   *   Keys are ISO 4217 currency codes. Values are arrays with two keys:
+   *   - minimum (optional): The minimum amount in this currency that is
+   *     supported.
+   *   - maximum (optional): The maximum amount in this currency that is
+   *     supported.
+   *   Return TRUE to allow all currencies and amounts.
+   */
+  protected function getSupportedCurrencies() {
+    return TRUE;
   }
 }
