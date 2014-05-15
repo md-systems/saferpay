@@ -9,13 +9,13 @@ payment_saferpay.business:
 payment_saferpay.business_scd_payemnt:
   path: '/saferpay/business/scd/{payment}'
   defaults:
-    _content: '\Drupal\payment_saferpay\Form\BusinessRedirectForm::processSCDResponse'
+    _content: '\Drupal\payment_saferpay\Controller\SaferpayResponseController::processSCDResponse'
   requirements:
     _access: 'TRUE'
 
 payment_saferpay.business_mpi_payemnt:
   path: '/saferpay/business/mpi/{payment}'
   defaults:
-    _content: '\Drupal\payment_saferpay\Form\BusinessRedirectForm::processMPIResponse'
+    _content: '\Drupal\payment_saferpay\Controller\SaferpayResponseController::processMPIResponse'
   requirements:
     _access: 'TRUE'
