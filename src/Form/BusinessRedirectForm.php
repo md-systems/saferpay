@@ -10,6 +10,7 @@ use Drupal\Core\Form\FormBase;
 use Drupal\payment\Payment as PaymentServiceWrapper;
 use \Drupal\payment\Entity\Payment;
 use Drupal\payment\Plugin\Payment\Method\PaymentMethodManager;
+use Drupal\payment_saferpay\SaferpayException;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -76,8 +77,16 @@ class BusinessRedirectForm extends FormBase {
 
     $payment->save();
 
-    $url = _payment_saferpay_business_initpay($config, $payment);
-    if (empty($url)) {
+    /** @var \Drupal\payment_saferpay\SaferPaybusiness $saferpay */
+    $saferpay = \Drupal::service('payment_saferpay.business');
+    $saferpay->setPayment($payment);
+    $saferpay->setSettings($config);
+
+    try {
+      $url = $saferpay->getTransactionUrl();
+    }
+    catch (SaferpayException $e) {
+      drupal_set_message($e->getMessage(), 'error');
       return array();
     }
 

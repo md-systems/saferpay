@@ -2,95 +2,179 @@
 
 namespace Drupal\payment_saferpay;
 
+use Drupal\Component\Utility\Crypt;
+use Drupal\Core\Language\LanguageManagerInterface;
+use Drupal\Core\Routing\UrlGenerator;
+use Drupal\Core\Site\Settings;
+use Drupal\Core\StringTranslation\StringTranslationTrait;
+use Drupal\payment\Entity\Payment;
+
 class SaferPaybusiness {
 
-  function __construct() {
+  use StringTranslationTrait;
 
+  protected $settings = array();
+
+  /**
+   * @var \Drupal\Core\Routing\UrlGenerator
+   */
+  protected $urlGenerator;
+
+  /**
+   * @var \Drupal\Core\Language\LanguageManagerInterface
+   */
+  protected $languageManager;
+
+  /**
+   * @var \Drupal\payment\Entity\Payment
+   */
+  protected $payment;
+
+  function __construct(UrlGenerator $url_generator, LanguageManagerInterface $language_manager) {
+    $this->urlGenerator = $url_generator;
+    $this->languageManager = $language_manager;
   }
 
-  public function init() {
+  public function setSettings($settings) {
+    $this->settings = $settings;
+  }
 
+  public function getSetting($key) {
+    if (!$this->hasSetting($key)) {
+      throw new SaferpayException($this->t('Unknown setting @key requested', array('@key' => $key)));
+    }
+
+    return $this->settings[$key];
+  }
+
+  public function hasSetting($key) {
+    return array_key_exists($key, $this->settings);
+  }
+
+  public function setPayment(Payment $payment) {
+    $this->payment = $payment;
+  }
+
+  public function getPayment() {
+    if (empty($this->payment)) {
+      throw new SaferpayException($this->t('Payment requested while there is none set'));
+    }
+    return $this->payment;
+  }
+
+  public function setSessionData($key, $value) {
+    $_SESSION['payment_saferpay'][$key] = $value;
+  }
+
+  public function getSessionData($key) {
+    if (!$this->hasSessionData($key)) {
+      throw new SaferpayException($this->t('Unknown session data @key requested', array('@key' => $key)));
+    }
+    return $_SESSION['payment_saferpay'][$key];
+  }
+
+  public function hasSessionData($key) {
+    if (!array_key_exists('payment_saferpay', $_SESSION)) {
+      $_SESSION['payment_saferpay'] = array();
+    }
+    return array_key_exists($key, $_SESSION['payment_saferpay']);
+  }
+
+  public function getTransactionUrl() {
+
+    $data['CARDREFID'] = 'new';
+
+    $data['FAILLINK'] = $this->urlGenerator->generateFromRoute('payment_saferpay.business_scd_payemnt',
+      array('payment' => $this->getPayment()->id()), array('absolute' => TRUE, 'key' => $this->computeToken($this->getPayment()->uuid())));
+
+    $data['SUCCESSLINK'] = $data['FAILLINK'];
+    $data['BACKLINK'] = $data['FAILLINK'];
+    $data['ACCOUNTID'] = $this->getSetting('account_id');
+
+    if ($this->hasSetting('password')) {
+      $data['spPassword'] = $this->getSetting('password');
+    }
+
+    // Saferpay only supports en, de, it and fr. For everything else, fall back
+    // to en.
+    $language = $this->languageManager->getCurrentLanguage()->id;
+    $data['LANGID'] = in_array($language, array('en', 'de', 'fr', 'it')) ? $language : 'EN';
+
+    $response = $this->saferpayRequest($this->urlGenerator->generateFromPath('https://www.saferpay.com/hosting/CreatePayInit.asp',
+      array('external' => TRUE, 'query' => $data)));
+
+    if (strpos($response, 'ERROR') !== FALSE) {
+      throw new SaferpayException($this->t('An error occurred during payment: @error.', array('@error' => $response)));
+    }
+
+    return $response;
   }
 
   public function pay() {
-    $transaction = $this->authorizePayment($payment, $config);
+    $transaction = $this->authorizePayment();
     if ($transaction !== FALSE) {
-      $complete_response = $this->settlePayment($payment, $transaction, $config);
-      if ($complete_response !== TRUE) {
-        // Display error and redirect back.
-        drupal_set_message(t('An error occured while settling the payment: @error.', array('@error' => implode(', ', $this->error))), 'error');
-      }
-    }
-    else {
-      drupal_set_message(t('An error occured while processing the payment: @error.', array('@error' => implode(', ', $this->error))), 'error');
+      $this->settlePayment($transaction);
     }
   }
 
-  public function verifyEnrollment() {
+  public function verifyEnrollment($scd_response) {
     $data = array();
 
     // Generic arguments.
     $data['MSGTYPE'] = 'VerifyEnrollment';
-    $data['ACCOUNTID'] = $config['account_id'];
-    if (!empty($config['password'])) {
-      $data['spPassword'] = $config['password'];
+    $data['ACCOUNTID'] = $this->getSetting('account_id');
+    if ($this->hasSetting('password')) {
+      $data['spPassword'] = $this->getSetting('password');
     }
-    // @todo - here we need some key based on which the enrollment will be verified.
-    $data['MPI_PA_BACKLINK'] = url('saferpay/business/mpi/' . $payment->id(), array('absolute' => TRUE));
+
+    $data['MPI_PA_BACKLINK'] = $this->urlGenerator->generateFromRoute('payment_saferpay.business_mpi_payemnt',
+      array('payment' => $this->getPayment()->id()), array('absolute' => TRUE, 'query' => array('key' => $this->computeToken($this->getPayment()->uuid()))));
 
     // Card reference.
     $data['CARDREFID'] = $scd_response['CARDREFID'];
     $data['EXP'] = $scd_response['EXPIRYMONTH'] . $scd_response['EXPIRYYEAR'];
 
     // Payment amount.
-    $data['AMOUNT'] = round($payment->getAmount() * 100);
-    $data['CURRENCY'] = $payment->getCurrencyCode();
+    $data['AMOUNT'] = round($this->getPayment()->getAmount() * 100);
+    $data['CURRENCY'] = $this->getPayment()->getCurrencyCode();
 
-    $url = url('https://www.saferpay.com/hosting/VerifyEnrollment.asp', array('external' => TRUE, 'query' => $data));
+    $url = $this->urlGenerator->generateFromPath('https://www.saferpay.com/hosting/VerifyEnrollment.asp',
+      array('external' => TRUE, 'query' => $data));
 
-    $return = payment_saferpay_process_url($url);
+    $return = $this->saferpayRequest($url);
     list($code, $response) = explode(':', $return, 2);
+
     if ($code == 'OK') {
       return simplexml_load_string($response);
     }
-    else {
-      $this->error[] = $response;
-    }
-    return FALSE;
+
+    throw new SaferpayException($this->t('Failed to verify the enrolment: @error', array('@error' => $response)));
   }
 
   /**
    * Authorizes a payment.
    *
-   * @param $order
-   *   The order object. Needs to have PAYMENT_SAFERPAY_card_ref_id defined in
-   *   $order->data and optionally PAYMENT_SAFERPAY_mpi_session_id.
-   * @param $settings
-   *   The payment method settings.
-   * @param $method_id
-   *   The payment method id.
-   *
-   * @return
+   * @return array
    *   The transaction object if the authorization succeeded, FALSE
    *   otherwise. The error can be fetched from
    *   PAYMENT_SAFERPAY_business_error() in that case.
+   *
+   * @throws \Drupal\payment_saferpay\SaferpayException
+   *   If error occurs during the authorization process.
    */
-  protected function authorizePayment(Payment $payment, $config) {
+  protected function authorizePayment() {
     $data = array();
 
-    // Generic arguments.
     $data['MSGTYPE'] = 'VerifyEnrollment';
-    $data['ACCOUNTID'] = $config['account_id'];
-    if (!empty($config['password'])) {
-      $data['spPassword'] = $config['password'];
+    $data['ACCOUNTID'] = $this->getSetting('account_id');
+    if ($this->hasSetting('password')) {
+      $data['spPassword'] = $this->getSetting('password');
     }
 
-    $card_info = \Drupal::state()->get('payment_saferpay_card_info');
-    $data['CARDREFID'] = $card_info[$payment->id()]['card_ref_id'];
-    // Set the MPI_SESSIONID if existing.
+    $data['CARDREFID'] = $this->getSessionData('card_ref_id');
 
-    if (!empty($config['mpi_session_id'])) {
-      $data['MPI_SESSIONID'] = $config['mpi_session_id'];
+    if ($this->hasSessionData('mpi_session_id')) {
+      $data['MPI_SESSIONID'] = $this->getSessionData('mpi_session_id');
     }
 
     // If the CVC number is present in the session, use it and then remove it.
@@ -99,16 +183,14 @@ class SaferPaybusiness {
     }
 
     // Order data.
-    $data['AMOUNT'] = round($payment->getAmount() * 100);
-    $data['CURRENCY'] = $payment->getCurrencyCode();
+    $data['AMOUNT'] = round($this->getPayment()->getAmount() * 100);
+    $data['CURRENCY'] = $this->getPayment()->getCurrencyCode();
+    $data['ORDERID'] = $this->computeToken($this->getPayment()->uuid());
 
-    // @todo - what should be the identifier?
-    $payment_identifier = $payment->uuid();
-    $data['ORDERID'] = htmlentities($payment_identifier, ENT_QUOTES, "UTF-8");
+    $url = $this->urlGenerator->generateFromPath('https://www.saferpay.com/hosting/execute.asp',
+      array('external' => TRUE, 'query' => $data));
 
-    $url = url('https://www.saferpay.com/hosting/execute.asp', array('external' => TRUE, 'query' => $data));
-
-    $return = payment_saferpay_process_url($url);
+    $return = $this->saferpayRequest($url);
     list($code, $idp_string) = explode(':', $return, 2);
     if ($code == 'OK') {
       $idp = simplexml_load_string($idp_string);
@@ -122,64 +204,82 @@ class SaferPaybusiness {
         );
       }
       else {
-        $this->error[] = $idp['AUTHMESSAGE'];
+        throw new SaferpayException($this->t('Saferpay responded with authentication error: @error',
+          array('@error' => $idp['AUTHMESSAGE'])));
       }
     }
     else {
-      $this->error[] = $idp_string;
+      throw new SaferpayException($this->t('Saferpay responded with an error: @error',
+        array('@error' => $idp_string)));
     }
-    return FALSE;
+  }
+
+  /**
+   * Computes token for given value.
+   *
+   * @param mixed $value
+   *   Value for which to compute a token.
+   *
+   * @return string
+   *   The computed token.
+   */
+  protected function computeToken($value) {
+    return Crypt::hmacBase64($value, \Drupal::service('private_key')->get() . Settings::getHashSalt());
   }
 
   /**
    * Verifies 3-D secure enrollment.
    *
    * @param $transaction
-   *   Commerce payment transaction object to be settled.
-   * @param $config
-   *   The payment method settings.
+   *   The transaction received from saferpay service.
    *
-   * @return \SimpleXMLElement
-   *   TRUE if the settlement succeeded, FALSE otherwise. The error can be fetched
-   *   from PAYMENT_SAFERPAY_business_error() in that case.
+   * @throws \Drupal\payment_saferpay\SaferpayException
+   *   If error occurred during settling the payment.
    */
-  protected function settlePayment(Payment $payment, $transaction, $config) {
+  protected function settlePayment($transaction) {
     $data = array();
 
-    // Generic arguments.
-    $data['ACCOUNTID'] = $config['account_id'];
-    if (!empty($config['password'])) {
-      $data['spPassword'] = $config['password'];
-    }
     $data['ACTION'] = 'Settlement';
-
     $data['ID'] = $transaction['remote_id'];
+    $data['ACCOUNTID'] = $this->getSetting('account_id');
+    if ($this->hasSetting('password')) {
+      $data['spPassword'] = $this->getSetting('password');
+    }
 
-    $url = url('https://www.saferpay.com/hosting/paycompletev2.asp', array('external' => TRUE, 'query' => $data));
+    $url = $this->urlGenerator->generateFromPath('https://www.saferpay.com/hosting/paycompletev2.asp',
+      array('external' => TRUE, 'query' => $data));
 
-    $return = payment_saferpay_process_url($url);
+    $return = $this->saferpayRequest($url);
     list($code, $response_string) = explode(':', $return, 2);
+
     if ($code == 'OK') {
       $response = simplexml_load_string($response_string);
       if ((int) $response['RESULT'] == 0) {
-        $payment->execute();
+        $this->getPayment()->execute();
         // @todo - saving some more info?
 //        $transaction->remote_message = (string) $response['MESSAGE'];
 //        $transaction->payload[REQUEST_TIME][] = $response_string;
-        return TRUE;
       }
       else {
-        $this->error[] = $response['MESSAGE'] . $response['AUTHMESSAGE'];
-        $payment->setStatus(PaymentServiceWrapper::statusManager()->createInstance('payment_failure'));
-        $payment->save();
+        throw new SaferpayException($this->t('Saferpay responded with following error: @error', array('@error' => $response['MESSAGE'] . $response['AUTHMESSAGE'])));
         // @todo - saving some more info?
 //        $transaction->remote_message = (string) $response['MESSAGE'];
 //        $transaction->payload[REQUEST_TIME][] = $response_string;
       }
     }
     else {
-      $this->error[] = $response_string;
+      throw new SaferpayException($this->t('Saferpay responded with following error: @error', array('@error' => $response_string)));
     }
-    return FALSE;
+  }
+
+  protected function saferpayRequest($url) {
+    $ch = curl_init($url);
+    curl_setopt($ch, CURLOPT_PORT, 443);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, FALSE);
+    curl_setopt($ch, CURLOPT_HEADER, 0);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
+    $response = curl_exec($ch);
+    curl_close($ch);
+    return $response;
   }
 }

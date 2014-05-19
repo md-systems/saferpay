@@ -1,4 +1,4 @@
 services:
   payment_saferpay.business:
     class: Drupal\payment_saferpay\SaferpayBusiness
-#    arguments: ['@module_handler', '@config.factory']
+    arguments: ['@url_generator', '@language_manager']
