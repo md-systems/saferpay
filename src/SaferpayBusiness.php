@@ -8,6 +8,7 @@ use Drupal\Core\Routing\UrlGenerator;
 use Drupal\Core\Site\Settings;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
 use Drupal\payment\Entity\Payment;
+use GuzzleHttp\ClientInterface;
 
 class SaferPaybusiness {
 
@@ -26,13 +27,21 @@ class SaferPaybusiness {
   protected $languageManager;
 
   /**
+   * The HTTP client to fetch the feed data with.
+   *
+   * @var \GuzzleHttp\ClientInterface
+   */
+  protected $httpClient;
+
+  /**
    * @var \Drupal\payment\Entity\Payment
    */
   protected $payment;
 
-  function __construct(UrlGenerator $url_generator, LanguageManagerInterface $language_manager) {
+  function __construct(UrlGenerator $url_generator, LanguageManagerInterface $language_manager, ClientInterface $http_client) {
     $this->urlGenerator = $url_generator;
     $this->languageManager = $language_manager;
+    $this->httpClient = $http_client;
   }
 
   public function setSettings($settings) {
@@ -273,13 +282,11 @@ class SaferPaybusiness {
   }
 
   protected function saferpayRequest($url) {
-    $ch = curl_init($url);
-    curl_setopt($ch, CURLOPT_PORT, 443);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, FALSE);
-    curl_setopt($ch, CURLOPT_HEADER, 0);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
-    $response = curl_exec($ch);
-    curl_close($ch);
+    $request = $this->httpClient->createRequest('POST', $url, [
+      'verify' => FALSE,
+    ]);
+    $response = $this->httpClient->send($request);
+
     return $response;
   }
 }
