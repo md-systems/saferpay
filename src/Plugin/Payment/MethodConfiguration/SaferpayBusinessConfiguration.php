@@ -42,12 +42,12 @@ class SaferpayBusinessConfiguration extends PaymentMethodConfigurationBase imple
    *   The plugin_id for the plugin instance.
    * @param array $plugin_definition
    *   The plugin implementation definition.
-   * @param \Drupal\payment\Plugin\Payment\Status\PaymentStatusManagerInterface
+   * @param \Drupal\payment\Plugin\Payment\Status\PaymentStatusManagerInterface $payment_status_manager
    *   The payment status manager.
    * @param \Drupal\Core\StringTranslation\TranslationInterface $string_translation
    *   A string containing the English string to translate.
    * @param \Drupal\Core\Extension\ModuleHandlerInterface $module_handler
-   *  Interface for classes that manage a set of enabled modules.
+   *   Interface for classes that manage a set of enabled modules.
    */
   public function __construct(array $configuration, $plugin_id, array $plugin_definition, PaymentStatusManagerInterface $payment_status_manager, TranslationInterface $string_translation, ModuleHandlerInterface $module_handler) {
     $configuration += $this->defaultConfiguration();
@@ -60,7 +60,14 @@ class SaferpayBusinessConfiguration extends PaymentMethodConfigurationBase imple
    * {@inheritdoc}
    */
   public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition) {
-    return new static($configuration, $plugin_id, $plugin_definition, $container->get('plugin.manager.payment.status'), $container->get('string_translation'), $container->get('module_handler'));
+    return new static(
+      $configuration,
+      $plugin_id,
+      $plugin_definition,
+      $container->get('plugin.manager.payment.status'),
+      $container->get('string_translation'),
+      $container->get('module_handler')
+    );
   }
 
   /**
@@ -70,7 +77,7 @@ class SaferpayBusinessConfiguration extends PaymentMethodConfigurationBase imple
     return parent::defaultConfiguration() + array(
       'account_id' => '99867-94913159',
       'password' => 'XAjc3Kna',
-      'status' => 'payment_success'
+      'status' => 'payment_success',
     );
   }
 
@@ -81,6 +88,7 @@ class SaferpayBusinessConfiguration extends PaymentMethodConfigurationBase imple
    *   The plugin ID of the payment status to set.
    *
    * @return \Drupal\payment_saferpay\Plugin\Payment\MethodConfiguration\SaferpayBusinessConfiguration
+   *   The configuration object for the Saferpay Business payment method plugin.
    */
   public function setStatus($status) {
     $this->configuration['status'] = $status;
@@ -105,6 +113,7 @@ class SaferpayBusinessConfiguration extends PaymentMethodConfigurationBase imple
    *   Account id.
    *
    * @return \Drupal\payment_saferpay\Plugin\Payment\MethodConfiguration\SaferpayBusinessConfiguration
+   *   The configuration object for the Saferpay Business payment method plugin.
    */
   public function setAccountId($account_id) {
     $this->configuration['account_id'] = $account_id;
@@ -129,6 +138,7 @@ class SaferpayBusinessConfiguration extends PaymentMethodConfigurationBase imple
    *   The password.
    *
    * @return \Drupal\payment_saferpay\Plugin\Payment\MethodConfiguration\SaferpayBusinessConfiguration
+   *   The configuration object for the Saferpay Business payment method plugin.
    */
   public function setPassword($password) {
     $this->configuration['account_id'] = $password;
