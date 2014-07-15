@@ -44,6 +44,10 @@ class SaferpayBusinessConfiguration extends PaymentMethodConfigurationBase imple
    *   The plugin implementation definition.
    * @param \Drupal\payment\Plugin\Payment\Status\PaymentStatusManagerInterface
    *   The payment status manager.
+   * @param \Drupal\Core\StringTranslation\TranslationInterface $string_translation
+   *   A string containing the English string to translate.
+   * @param \Drupal\Core\Extension\ModuleHandlerInterface $module_handler
+   *  Interface for classes that manage a set of enabled modules.
    */
   public function __construct(array $configuration, $plugin_id, array $plugin_definition, PaymentStatusManagerInterface $payment_status_manager, TranslationInterface $string_translation, ModuleHandlerInterface $module_handler) {
     $configuration += $this->defaultConfiguration();
