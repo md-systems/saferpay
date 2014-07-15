@@ -11,7 +11,6 @@ use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\Utility\Token;
-use Drupal\payment\Entity\PaymentInterface;
 use Drupal\payment\Plugin\Payment\Method\PaymentMethodBase;
 use Drupal\payment\Plugin\Payment\Status\PaymentStatusManager;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -85,8 +84,6 @@ class SaferpayBusinessMethod extends PaymentMethodBase implements ContainerFacto
 
   /**
    * Performs the actual payment execution.
-   *
-   * @param \Drupal\payment\Entity\PaymentInterface $payment
    */
   protected function doExecutePayment() {
     $payment = $this->getPayment();
