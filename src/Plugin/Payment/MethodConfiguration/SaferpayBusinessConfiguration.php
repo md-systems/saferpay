@@ -2,13 +2,14 @@
 
 /**
  * @file
- * Contains \Drupal\payment_saferpay\Plugin\Payment\MethodConfiguration\SaferpayBusinessConfiguration.
+ * Contains \Drupal\saferpay\Plugin\Payment\MethodConfiguration\SaferpayBusinessConfiguration.
  */
 
 namespace Drupal\payment_saferpay\Plugin\Payment\MethodConfiguration;
 
 use Drupal\Component\Utility\NestedArray;
 use Drupal\Core\Extension\ModuleHandlerInterface;
+use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\Core\StringTranslation\TranslationInterface;
 use Drupal\payment\Plugin\Payment\MethodConfiguration\PaymentMethodConfigurationBase;
@@ -141,7 +142,7 @@ class SaferpayBusinessConfiguration extends PaymentMethodConfigurationBase imple
    *   The configuration object for the Saferpay Business payment method plugin.
    */
   public function setPassword($password) {
-    $this->configuration['account_id'] = $password;
+    $this->configuration['password'] = $password;
 
     return $this;
   }
@@ -159,22 +160,22 @@ class SaferpayBusinessConfiguration extends PaymentMethodConfigurationBase imple
   /**
    * {@inheritdoc}
    */
-  public function formElements(array $form, array &$form_state) {
-    $elements = parent::formElements($form, $form_state);
-    $elements['#element_validate'][] = array($this, 'formElementsValidate');
+  public function buildConfigurationForm(array $form, FormStateInterface $form_state) {
+    $form = parent::buildConfigurationForm($form, $form_state);
+    $form['#element_validate'][] = array($this, 'formElementsValidate');
 
-    $elements['account_id'] = array(
+    $form['account_id'] = array(
       '#type' => 'textfield',
       '#title' => $this->t('Account ID'),
       '#default_value' => $this->getAccountId(),
     );
-    $elements['password'] = array(
+    $form['password'] = array(
       '#type' => 'textfield',
-      '#title' => $this->t('spPassword'),
+      '#title' => $this->t('Saferpay Password'),
       '#description' => $this->t('Only required for the test account.'),
       '#default_value' => $this->getPassword(),
     );
-    $elements['status'] = array(
+    $form['status'] = array(
       '#type' => 'select',
       '#title' => $this->t('Final payment status'),
       '#description' => $this->t('The status to set payments to after being processed by this payment method.'),
@@ -182,14 +183,14 @@ class SaferpayBusinessConfiguration extends PaymentMethodConfigurationBase imple
       '#options' => $this->paymentStatusManager->options(),
     );
 
-    return $elements;
+    return $form;
   }
 
   /**
    * Implements form validate callback for self::formElements().
    */
-  public function formElementsValidate(array $element, array &$form_state, array $form) {
-    $values = NestedArray::getValue($form_state['values'], $element['#parents']);
+  public function formElementsValidate(array $element, FormStateInterface $form_state, array $form) {
+    $values = NestedArray::getValue($form_state->getValues(), $element['#parents']);
     $this->setStatus($values['status'])
       ->setAccountId($values['account_id'])
       ->setPassword($values['password']);

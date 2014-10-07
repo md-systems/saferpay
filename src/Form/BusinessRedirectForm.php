@@ -7,6 +7,8 @@
 namespace Drupal\payment_saferpay\Form;
 
 use Drupal\Core\Form\FormBase;
+use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Url;
 use Drupal\payment\Payment as PaymentServiceWrapper;
 use \Drupal\payment\Entity\Payment;
 use Drupal\payment\Plugin\Payment\Method\PaymentMethodManager;
@@ -52,13 +54,14 @@ class BusinessRedirectForm extends FormBase {
   /**
    * {@inheritdoc}
    */
-  public function buildForm(array $form, array &$form_state) {
-
+  public function buildForm(array $form, FormStateInterface $form_state) {
     $config = PaymentServiceWrapper::methodConfigurationManager()->createInstance('payment_saferpay_business')->getConfiguration();
     $method = PaymentServiceWrapper::methodManager()->createInstance('payment_saferpay_business');
 
     if (!empty($config['password'])) {
-      drupal_set_message(t('Saferpay Business has not been configured. The test account is used. Visit the <a href="!url">payment settings</a> to change this.', array('!url' => url('admin/commerce/config/payment-methods'))), 'warning');
+      $url = Url::fromRoute('payment_saferpay.payment_methods');
+      $internal_link = \Drupal::l(t('payment settings'), $url);
+      drupal_set_message(t('Saferpay Business has not been configured. The test account is used. Visit the <a href="!url">payment settings</a> to change this.', array('!url' => $internal_link)), 'warning');
     }
 
     /** @var \Drupal\payment\Entity\Payment $payment */
@@ -174,7 +177,7 @@ class BusinessRedirectForm extends FormBase {
     return $form;
   }
 
-  public function submitForm(array &$form, array &$form_state) {
+  public function submitForm(array &$form, FormStateInterface $form_state) {
     $method = $this->paymentManager->createInstance('payment_saferpay_business');
     $payment = entity_create('payment', array(
       'bundle' => 'payment_saferpay_business',
@@ -185,6 +188,6 @@ class BusinessRedirectForm extends FormBase {
   /**
    * {@inheritdoc}
    */
-  public function validateForm(array &$form, array &$form_state) {
+  public function validateForm(array &$form, FormStateInterface $form_state) {
   }
 }

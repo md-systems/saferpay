@@ -7,6 +7,7 @@
 
 namespace Drupal\payment_saferpay\Plugin\Payment\Type;
 
+use Drupal\Core\Session\AccountInterface;
 use Drupal\payment\Plugin\Payment\Type\PaymentTypeBase;
 
 /**
@@ -31,7 +32,13 @@ class SaferpayBusinessType extends PaymentTypeBase {
   /**
    * {@inheritdoc
    */
-  public function doResumeContext() {
+  public function resumeContextAccess(AccountInterface $account) {
+    return FALSE;
+  }
 
+  /**
+   * {@inheritdoc
+   */
+  public function doResumeContext() {
   }
 }

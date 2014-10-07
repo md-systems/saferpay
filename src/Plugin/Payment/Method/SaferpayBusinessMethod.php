@@ -10,11 +10,16 @@ namespace Drupal\payment_saferpay\Plugin\Payment\Method;
 use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\Core\Session\AccountInterface;
+use Drupal\Core\Url;
 use Drupal\Core\Utility\Token;
+use Drupal\currency\Entity\Currency;
 use Drupal\payment\Plugin\Payment\Method\PaymentMethodBase;
 use Drupal\payment\Plugin\Payment\Status\PaymentStatusManager;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
+use Symfony\Component\HttpFoundation\RedirectResponse;
+use Symfony\Component\HttpKernel\Event\FilterResponseEvent;
+use Symfony\Component\HttpKernel\KernelEvents;
 
 /**
  * Saferpay Business payment method.
@@ -87,10 +92,37 @@ class SaferpayBusinessMethod extends PaymentMethodBase implements ContainerFacto
    */
   protected function doExecutePayment() {
     $payment = $this->getPayment();
+    $generator = \Drupal::urlGenerator();
 
-    $payment->setStatus($this->paymentStatusManager->createInstance('finished'));
+    /** @var \Drupal\currency\Entity\CurrencyInterface $currency */
+    $currency = Currency::load($payment->getCurrencyCode());
+
+    $payment_data = array(
+      'status' => $payment->getStatus(),
+      'account_id' => $payment->getAccountId(),
+      'password' => $payment->getPassword(),
+    );
+
+    $redirect_url = Url::fromUri($this->pluginDefinition['up_start_url'], array(
+      'absolute' => TRUE,
+      'query' => $payment_data,
+    ))->toString();
+
+    $response = new RedirectResponse($redirect_url);
+    $listener = function (FilterResponseEvent $event) use ($response) {
+      $event->setResponse($response);
+      $event->stopPropagation();
+    };
+    $this->eventDispatcher->addListener(KernelEvents::RESPONSE, $listener, 999);
+
+    //$kasdk = \Drupal::httpClient()->get()
+      // get body
     $payment->save();
-    $payment->getPaymentType()->resumeContext();
+
+//    $payment = $this->getPayment();
+//    $payment->setPaymentStatus($this->paymentStatusManager->createInstance('payment_success'));
+//    $payment->save();
+//    $payment->getPaymentType()->resumeContext();
   }
 
   /**
