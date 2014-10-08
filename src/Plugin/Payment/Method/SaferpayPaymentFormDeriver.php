@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Contains \Drupal\payment_saferpay\Plugin\Payment\Method\SaferpayBusinessDeriver.
+ * Contains \Drupal\payment_saferpay\Plugin\Payment\Method\SaferpayPaymentFormDeriver.
  */
 
 namespace Drupal\payment_saferpay\Plugin\Payment\Method;
@@ -18,7 +18,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  *
  * @see \Drupal\payment\Plugin\Payment\Method\Basic
  */
-class SaferpayBusinessDeriver extends DeriverBase implements ContainerDeriverInterface {
+class SaferpayPaymentFormDeriver extends DeriverBase implements ContainerDeriverInterface {
 
   /**
    * The payment method configuration manager.
@@ -59,14 +59,15 @@ class SaferpayBusinessDeriver extends DeriverBase implements ContainerDeriverInt
     /** @var \Drupal\payment\Entity\PaymentMethodConfigurationInterface[] $payment_methods */
     $payment_methods = $this->paymentMethodConfigurationStorage->loadMultiple();
     foreach ($payment_methods as $payment_method) {
-      if ($payment_method->getPluginId() == 'payment_saferpay_business') {
-        /** @var \Drupal\payment_saferpay\Plugin\Payment\MethodConfiguration\SaferpayBusinessConfiguration $configuration_plugin */
+      if ($payment_method->getPluginId() == 'payment_saferpay_payment_form') {
+        /** @var \Drupal\payment_saferpay\Plugin\Payment\MethodConfiguration\SaferpayPaymentFormConfiguration $configuration_plugin */
         $configuration_plugin = $this->paymentMethodConfigurationManager->createInstance($payment_method->getPluginId(), $payment_method->getPluginConfiguration());
         $this->derivatives[$payment_method->id()] = array(
             //'active' => $payment_method->status(),
             'account_id' => $configuration_plugin->getAccountId(),
-            'password' => $configuration_plugin->getPassword(),
-            'status' => $configuration_plugin->getStatus(),
+            'payment_link' => $configuration_plugin->getPaymentLink(),
+            'authorization_link' => $configuration_plugin->getAuthorizationLink(),
+            'settlement_link' => $configuration_plugin->getSettlementLink(),
           ) + $base_plugin_definition;
       }
     }

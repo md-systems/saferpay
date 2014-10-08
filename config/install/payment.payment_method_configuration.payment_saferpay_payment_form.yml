@@ -1,0 +1,14 @@
+id: payment_saferpay_payment_form
+label: 'Saferpay Payment Form'
+ownerId: 1
+pluginConfiguration:
+  message_text: 'Saferpay Payment Form'
+  message_text_format: plain_text
+  status: payment_pending
+  account_id: 99867-94913159
+  payment_link: 'https://www.saferpay.com/hosting/CreatePayInit.asp'
+  authorization_link: 'https://www.saferpay.com/hosting/VerifyPayConfirm.asp'
+  settlement_link: 'https://www.saferpay.com/hosting/PayCompleteV2.asp'
+  authorizaton_link: 'https://www.saferpay.com/hosting/PayCompleteV2.aspB'
+pluginId: payment_saferpay_payment_form
+status: true
