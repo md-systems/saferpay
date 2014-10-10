@@ -7,9 +7,11 @@
 namespace Drupal\payment_saferpay\Controller;
 
 use Drupal\payment\Entity\Payment;
+use Drupal\payment\Entity\PaymentInterface;
 use Drupal\payment_saferpay\SaferpayException;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Drupal\payment\Payment as PaymentServiceWrapper;
+use Symfony\Component\HttpFoundation\Request;
 
 /**
  * Saferpay response controller.
@@ -136,5 +138,63 @@ class SaferpayResponseController {
     }
 
     return new RedirectResponse($payment_url);
+  }
+
+  /**
+   * URL to which the customer is to be forwarded to via browser redirect
+   * after the successful reservation. Saferpay appends the
+   * confirmation message (PayConfirm) by GET to this URL.
+   *
+   * @param Request $request
+   *   Request
+   * @param PaymentInterface $payment
+   *   The Payment Entity type.
+   */
+  public function processSuccessResponse(Request $request, PaymentInterface $payment) {
+
+  }
+
+  /**
+   * URL to which the customer is to be forwarded to via browser redirect if the authorization attempt failed.
+   *
+   * @param Request $request
+   *   Request
+   * @param PaymentInterface $payment
+   *   The Payment Entity type.
+   */
+  public function processFailResponse(Request $request, PaymentInterface $payment) {
+
+  }
+
+  /**
+   * URL to which the customer is to be forwarded to via browser redirect if he aborts the transaction.
+   *
+   * @param Request $request
+   *   Request
+   * @param PaymentInterface $payment
+   *   The Payment Entity type.
+   */
+  public function processBackResponse(Request $request, PaymentInterface $payment) {
+
+  }
+
+  /**
+   * Fully qualified URL which in case of successful authorization is called
+   * directly by the saferpay server transmitting the confirmation message (PayConfirm)
+   * by POST. Only standard ports (http port 80, https port 443) are allowed.
+   *
+   * Other ports will not work. We recommend to implement NOTIFYURL in order to ensure the reception of
+   * the confirmation message independently from possible errors or problems on customer or browser side.
+   *
+   * To facilitate the correlation between request and response it has proven to be useful
+   * to add a shop session ID as GET parameter to the NOTIFYURL.
+   *
+   * @param Request $request
+   *   Request
+   * @param PaymentInterface $payment
+   *   The Payment Entity type.
+   */
+  public function processNotifyResponse(Request $request, PaymentInterface $payment) {
+
   }
 }

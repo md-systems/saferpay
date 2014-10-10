@@ -19,3 +19,31 @@ payment_saferpay.business_mpi_payemnt:
     _content: '\Drupal\payment_saferpay\Controller\SaferpayResponseController::processMPIResponse'
   requirements:
     _access: 'TRUE'
+
+payment_saferpay.response_success:
+  path: '/saferpay/success/{payment}'
+  defaults:
+    _controller: '\Drupal\payment_saferpay\Controller\SaferpayResponseController::processSuccessResponse'
+  requirements:
+    _access: 'TRUE'
+
+payment_saferpay.response_fail:
+  path: '/saferpay/fail/{payment}'
+  defaults:
+    _controller: '\Drupal\payment_saferpay\Controller\SaferpayResponseController::processFailResponse'
+  requirements:
+    _access: 'TRUE'
+
+payment_saferpay.response_back:
+  path: '/saferpay/back/{payment}'
+  defaults:
+    _controller: '\Drupal\payment_saferpay\Controller\SaferpayResponseController::processBackResponse'
+  requirements:
+    _access: 'TRUE'
+
+payment_saferpay.response_notify:
+  path: '/saferpay/notify/{payment}'
+  defaults:
+    _controller: '\Drupal\payment_saferpay\Controller\SaferpayResponseController::processNotifyResponse'
+  requirements:
+    _access: 'TRUE'

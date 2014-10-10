@@ -11,12 +11,16 @@ use Drupal\Component\Plugin\ConfigurablePluginInterface;
 use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\Core\Session\AccountInterface;
+use Drupal\Core\Url;
 use Drupal\Core\Utility\Token;
 use Drupal\currency\Entity\Currency;
 use Drupal\payment\Plugin\Payment\Method\PaymentMethodBase;
 use Drupal\payment\Plugin\Payment\Status\PaymentStatusManager;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
+use Symfony\Component\HttpFoundation\RedirectResponse;
+use Symfony\Component\HttpKernel\Event\FilterResponseEvent;
+use Symfony\Component\HttpKernel\KernelEvents;
 
 /**
  * Saferpay Payment Form payment method.
@@ -92,34 +96,48 @@ class SaferpayPaymentFormMethod extends PaymentMethodBase implements ContainerFa
     /** @var \Drupal\payment\Entity\PaymentInterface $payment */
     $payment = $this->getPayment();
 
+    $generator = \Drupal::urlGenerator();
+
     /** @var \Drupal\currency\Entity\CurrencyInterface $currency */
     $currency = Currency::load($payment->getCurrencyCode());
 
+    // @todo: Use this URL to call to.
+    $payment_link = $this->pluginDefinition['payment_link'];
+
+//    @todo: Use this links in a later proccess to call to en to confirm correct payments.
+//    $authorization_link = $this->pluginDefinition['authorization_link'];
+//    $settlement_link = $this->pluginDefinition['settlement_link'];
+
+    // @todo: Make a correct configurable payment description.
     $payment_data = array(
-      'account_id' => $this->pluginDefinition['account_id'],
-      'payment_link' => $this->pluginDefinition['payment_link'],
-      'authorization_link' => $this->pluginDefinition['authorization_link'],
-      'settlement_link' => $this->pluginDefinition['settlement_link'],
-      'amount' => intval($payment->getamount() * $currency->getSubunits()),
-      'currency' => $payment->getCurrencyCode(),
-      // @todo: Get description
-      //'description' => $payment->getDescription(),
+      'spPassword' => 'XAjc3Kna',
+      'ACCOUNTID' => $this->pluginDefinition['account_id'],
+      'AMOUNT' => intval($payment->getamount() * $currency->getSubunits()),
+      'CURRENCY' => $payment->getCurrencyCode(),
+      'DESCRIPTION' => 'Payment Description',
+      'ORDERID' => $payment->id(),
+      'SUCCESSLINK' => $generator->generateFromRoute('payment_saferpay.response_success', array('payment' => $payment->id()), array('absolute' => TRUE)),
+      'FAILLINK' => $generator->generateFromRoute('payment_saferpay.response_fail', array('payment' => $payment->id()), array('absolute' => TRUE)),
+      'BACKLINK' => $generator->generateFromRoute('payment_saferpay.response_back', array('payment' => $payment->id()), array('absolute' => TRUE)),
+      'NOTIFYURL' => $generator->generateFromRoute('payment_saferpay.response_notify', array('payment' => $payment->id()), array('absolute' => TRUE)),
     );
 
-//    $redirect_url = Url::fromUri($this->pluginDefinition['up_start_url'], array(
-//      'absolute' => TRUE,
-//      'query' => $payment_data,
-//    ))->toString();
-//
-//    $response = new RedirectResponse($redirect_url);
-//    $listener = function (FilterResponseEvent $event) use ($response) {
-//      $event->setResponse($response);
-//      $event->stopPropagation();
-//    };
-//    $this->eventDispatcher->addListener(KernelEvents::RESPONSE, $listener, 999);
 
-    //$kasdk = \Drupal::httpClient()->get()
-      // get body
+    $saferpay_callback = \Drupal::httpClient()->get($this->pluginDefinition['payment_link'], array('query' => $payment_data));
+    $saferpay_redirect_url = (string) $saferpay_callback->getBody();
+
+    $redirect_url = Url::fromUri($this->pluginDefinition['payment_link'], array(
+      'absolute' => TRUE,
+      'query' => $payment_data,
+    ))->toString();
+
+    $response = new RedirectResponse($saferpay_redirect_url);
+    $listener = function (FilterResponseEvent $event) use ($response) {
+      $event->setResponse($response);
+      $event->stopPropagation();
+    };
+    $this->eventDispatcher->addListener(KernelEvents::RESPONSE, $listener, 999);
+
     $payment->save();
 
 //    $payment = $this->getPayment();
