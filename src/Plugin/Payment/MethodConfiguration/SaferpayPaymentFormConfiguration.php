@@ -80,6 +80,7 @@ class SaferpayPaymentFormConfiguration extends PaymentMethodConfigurationBase im
       'payment_link' => 'https://www.saferpay.com/hosting/CreatePayInit.asp',
       'authorization_link' => 'https://www.saferpay.com/hosting/VerifyPayConfirm.asp',
       'settlement_link' => 'https://www.saferpay.com/hosting/PayCompleteV2.asp',
+      'settle_option' => TRUE,
     );
   }
 
@@ -184,6 +185,31 @@ class SaferpayPaymentFormConfiguration extends PaymentMethodConfigurationBase im
   }
 
   /**
+   * Sets the Saferpay Settle Option.
+   *
+   * @param string $settle_option
+   *   Settle Option, Yes or No
+   *
+   * @return \Drupal\payment_saferpay\Plugin\Payment\MethodConfiguration\SaferpayPaymentFormConfiguration
+   *   The configuration object for the Saferpay Payment Form payment method plugin.
+   */
+  public function setSettleOption($settle_option) {
+    $this->configuration['settle_option'] = $settle_option;
+
+    return $this;
+  }
+
+  /**
+   * Gets the Saferpay Settlement link.
+   *
+   * @return string
+   *   Settlement of a payment.
+   */
+  public function getSettleOption() {
+    return $this->configuration['settle_option'];
+  }
+
+  /**
    * {@inheritdoc}
    */
   public function buildConfigurationForm(array $form, FormStateInterface $form_state) {
@@ -215,6 +241,14 @@ class SaferpayPaymentFormConfiguration extends PaymentMethodConfigurationBase im
       '#title' => $this->t('Settlement Link'),
       '#description' => $this->t('Settlement of a payment'),
       '#default_value' => $this->getSettlementLink(),
+    );
+
+    $form['settle_option'] = array(
+      '#type' => 'select',
+      '#options' => array(TRUE => 'Yes', FALSE => 'No'),
+      '#title' => $this->t('Settle Payment directly'),
+      '#description' => $this->t('PAy the settle the payment directly after it is approved.'),
+      '#default_value' => $this->getSettleOption(),
     );
 
     return $form;

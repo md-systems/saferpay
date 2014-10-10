@@ -12,6 +12,7 @@ use Drupal\payment_saferpay\SaferpayException;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Drupal\payment\Payment as PaymentServiceWrapper;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
 
 /**
  * Saferpay response controller.
@@ -151,7 +152,21 @@ class SaferpayResponseController {
    *   The Payment Entity type.
    */
   public function processSuccessResponse(Request $request, PaymentInterface $payment) {
+    $data = array('DATA' => $request->get('DATA'), 'SIGNATURE' => $request->get('SIGNATURE'));
 
+    $verify_pay_confirm = \Drupal::httpClient()->get('https://www.saferpay.com/hosting/VerifyPayConfirm.asp', array('query' => $data));
+    $verify_pay_confirm_callback = (string) $verify_pay_confirm->getBody();
+
+    if (!substr($verify_pay_confirm_callback, 0, 2) === 'OK') {
+      $this->savePayment($payment, 'payment_failed');
+      // @todo: Watchdog call
+    }
+
+    $create_pay_init = \Drupal::httpClient()->get('https://www.saferpay.com/hosting/VerifyPayConfirm.asp', array('query' => $data));
+    $create_pay_init_callback = (string) $verify_pay_confirm->getBody();
+
+
+    $this->savePayment($payment, 'payment_success');
   }
 
   /**
@@ -196,5 +211,20 @@ class SaferpayResponseController {
    */
   public function processNotifyResponse(Request $request, PaymentInterface $payment) {
 
+  }
+
+  /**
+   * Saves success/cancelled/failed payment.
+   *
+   * @param $payment
+   *  Payment Interface.
+   * @param string $status
+   *  Payment Status
+   */
+  public function savePayment(PaymentInterface $payment, $status = 'payment_failed') {
+    $payment->setPaymentStatus(\Drupal::service('plugin.manager.payment.status')
+      ->createInstance($status));
+    $payment->save();
+    $payment->getPaymentType()->resumeContext();
   }
 }
