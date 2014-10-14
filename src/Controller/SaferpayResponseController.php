@@ -152,19 +152,45 @@ class SaferpayResponseController {
    *   The Payment Entity type.
    */
   public function processSuccessResponse(Request $request, PaymentInterface $payment) {
-    $data = array('DATA' => $request->get('DATA'), 'SIGNATURE' => $request->get('SIGNATURE'));
+    $plugin_definition = $payment->getPaymentMethod()->getPluginDefinition();
+    $pay_confirm_data = array('DATA' => $request->get('DATA'), 'SIGNATURE' => $request->get('SIGNATURE'), 'ACCOUNTID' => $plugin_definition['account_id']);
 
-    $verify_pay_confirm = \Drupal::httpClient()->get('https://www.saferpay.com/hosting/VerifyPayConfirm.asp', array('query' => $data));
+    // Test Configuration see PaymentPage setup SaferPay.
+    if ($plugin_definition['test_mode']) {
+      $pay_confirm_data['ACCOUNTID'] = '99867-94913159';
+      $pay_confirm_data['spPassword'] = 'XAjc3Kna';
+    }
+
+    // @todo: Don't hardcode the URL, get it from the configuration.
+    $verify_pay_confirm = \Drupal::httpClient()->get($plugin_definition['authorization_link'], array('query' => $pay_confirm_data));
     $verify_pay_confirm_callback = (string) $verify_pay_confirm->getBody();
 
     if (!substr($verify_pay_confirm_callback, 0, 2) === 'OK') {
       $this->savePayment($payment, 'payment_failed');
-      // @todo: Watchdog call
+      // @todo: Logger call ($verify_pay_confirm_callback == error message)
     }
 
-    $create_pay_init = \Drupal::httpClient()->get('https://www.saferpay.com/hosting/VerifyPayConfirm.asp', array('query' => $data));
-    $create_pay_init_callback = (string) $verify_pay_confirm->getBody();
+    // Settle Payment
+    if ($plugin_definition['settle_option']) {
+      $settle_data = array(
+        'ACCOUNTID' => $plugin_definition['account_id'],
+        //'ID' => substr($verify_pay_confirm_callback, 6, 33), @todo: Find a way to correctly retreive the ID from callback.
+        'ID' => '123456789',
+      );
 
+      // Test Configuration see PaymentPage setup SaferPay.
+      if ($plugin_definition['test_mode']) {
+        $settle_data['ACCOUNTID'] = '99867-94913159';
+        $settle_data['spPassword'] = 'XAjc3Kna';
+      }
+
+      $settle_payment = \Drupal::httpClient()->get($plugin_definition['settlement_link'], array('query' => $settle_data));
+      $settle_payment_callback = (string) $settle_payment->getBody();
+
+      if (!$settle_payment_callback === 'OK') {
+        // @todo: Logger call ($settle_payment_callback == error message)
+      }
+    }
 
     $this->savePayment($payment, 'payment_success');
   }

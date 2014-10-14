@@ -76,12 +76,38 @@ class SaferpayPaymentFormConfiguration extends PaymentMethodConfigurationBase im
    */
   public function defaultConfiguration() {
     return parent::defaultConfiguration() + array(
+      'test_mode' => FALSE,
       'account_id' => '99867-94913159',
       'payment_link' => 'https://www.saferpay.com/hosting/CreatePayInit.asp',
       'authorization_link' => 'https://www.saferpay.com/hosting/VerifyPayConfirm.asp',
       'settlement_link' => 'https://www.saferpay.com/hosting/PayCompleteV2.asp',
       'settle_option' => TRUE,
     );
+  }
+
+  /**
+   * Sets the Saferpay Test Mode.
+   *
+   * @param string $test_mode
+   *   Enable test mode for testing purposes
+   *
+   * @return \Drupal\payment_saferpay\Plugin\Payment\MethodConfiguration\SaferpayPaymentFormConfiguration
+   *   The configuration object for the Saferpay Payment Form payment method plugin.
+   */
+  public function setTestMode($test_mode) {
+    $this->configuration['test_mode'] = $test_mode;
+
+    return $this;
+  }
+
+  /**
+   * Gets the Saferpay Test Mode.
+   *
+   * @return string
+   *   Settlement of a payment.
+   */
+  public function getTestMode() {
+    return $this->configuration['test_mode'];
   }
 
   /**
@@ -216,6 +242,13 @@ class SaferpayPaymentFormConfiguration extends PaymentMethodConfigurationBase im
     $form = parent::buildConfigurationForm($form, $form_state);
     $form['#element_validate'][] = array($this, 'formElementsValidate');
 
+    $form['test_mode'] = array(
+      '#type' => 'checkbox',
+      '#title' => $this->t('Enable test mode'),
+      '#description' => $this->t('Warning! Test mode should not be enabled on live websites.'),
+      '#default_value' => $this->getTestMode(),
+    );
+
     $form['account_id'] = array(
       '#type' => 'textfield',
       '#title' => $this->t('Account ID'),
@@ -244,10 +277,9 @@ class SaferpayPaymentFormConfiguration extends PaymentMethodConfigurationBase im
     );
 
     $form['settle_option'] = array(
-      '#type' => 'select',
-      '#options' => array(TRUE => 'Yes', FALSE => 'No'),
+      '#type' => 'checkbox',
       '#title' => $this->t('Settle Payment directly'),
-      '#description' => $this->t('PAy the settle the payment directly after it is approved.'),
+      '#description' => $this->t('Settle the payment directly after it is approved.'),
       '#default_value' => $this->getSettleOption(),
     );
 
@@ -260,10 +292,12 @@ class SaferpayPaymentFormConfiguration extends PaymentMethodConfigurationBase im
   public function formElementsValidate(array $element, FormStateInterface $form_state, array $form) {
     $values = NestedArray::getValue($form_state->getValues(), $element['#parents']);
 
-    $this->setAccountId($values['account_id'])
+    $this->setTestMode($values['test_mode'])
+      ->setAccountId($values['account_id'])
       ->setPaymentLink($values['payment_link'])
       ->setAuthorizationLink($values['authorization_link'])
-      ->setSettlementLink($values['settlement_link']);
+      ->setSettlementLink($values['settlement_link'])
+      ->setSettleOption($values['settle_option']);
   }
 
 }

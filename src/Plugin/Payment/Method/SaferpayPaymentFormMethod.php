@@ -101,16 +101,8 @@ class SaferpayPaymentFormMethod extends PaymentMethodBase implements ContainerFa
     /** @var \Drupal\currency\Entity\CurrencyInterface $currency */
     $currency = Currency::load($payment->getCurrencyCode());
 
-    // @todo: Use this URL to call to.
-    $payment_link = $this->pluginDefinition['payment_link'];
-
-//    @todo: Use this links in a later proccess to call to en to confirm correct payments.
-//    $authorization_link = $this->pluginDefinition['authorization_link'];
-//    $settlement_link = $this->pluginDefinition['settlement_link'];
-
     // @todo: Make a correct configurable payment description.
     $payment_data = array(
-      'spPassword' => 'XAjc3Kna',
       'ACCOUNTID' => $this->pluginDefinition['account_id'],
       'AMOUNT' => intval($payment->getamount() * $currency->getSubunits()),
       'CURRENCY' => $payment->getCurrencyCode(),
@@ -121,6 +113,11 @@ class SaferpayPaymentFormMethod extends PaymentMethodBase implements ContainerFa
       'BACKLINK' => $generator->generateFromRoute('payment_saferpay.response_back', array('payment' => $payment->id()), array('absolute' => TRUE)),
       'NOTIFYURL' => $generator->generateFromRoute('payment_saferpay.response_notify', array('payment' => $payment->id()), array('absolute' => TRUE)),
     );
+
+    if ($this->pluginDefinition['test_mode']) {
+      $payment_data['ACCOUNTID'] = '99867-94913159';
+      $payment_data['spPassword'] = 'XAjc3Kna';
+    }
 
 
     $saferpay_callback = \Drupal::httpClient()->get($this->pluginDefinition['payment_link'], array('query' => $payment_data));

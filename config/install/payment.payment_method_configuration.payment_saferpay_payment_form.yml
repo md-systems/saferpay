@@ -10,5 +10,7 @@ pluginConfiguration:
   authorization_link: 'https://www.saferpay.com/hosting/VerifyPayConfirm.asp'
   settlement_link: 'https://www.saferpay.com/hosting/PayCompleteV2.asp'
   authorizaton_link: 'https://www.saferpay.com/hosting/PayCompleteV2.aspB'
+  test_mode: 0
+  settle_option: 1
 pluginId: payment_saferpay_payment_form
 status: true
