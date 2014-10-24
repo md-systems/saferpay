@@ -75,8 +75,8 @@ class SaferpayResponseController {
   public function processSCDResponse(Payment $payment) {
     $scd_response = simplexml_load_string($_GET['DATA']);
     if ($scd_response['RESULT'] != 0) {
-      // @todo Add message.
       drupal_set_message(t('Credit card verification failed: @error.', array('@error' => $scd_response['DESCRIPTION'])), 'error');
+      \Drupal::logger(t('Credit card verification failed: @error'),array('@error' => $scd_response['DESCRIPTION']))->warning('SaferpayResponseController.php');
       return new RedirectResponse('payment/' . $payment->id());
     }
 
@@ -167,7 +167,8 @@ class SaferpayResponseController {
 
     if (!substr($verify_pay_confirm_callback, 0, 2) === 'OK') {
       $this->savePayment($payment, 'payment_failed');
-      // @todo: Logger call ($verify_pay_confirm_callback == error message)
+      \Drupal::logger(t('Payment verification failed: @error'),array('@error' => $verify_pay_confirm_callback))->warning('SaferpayResponseController.php');
+
     }
 
     // Settle Payment
@@ -188,7 +189,7 @@ class SaferpayResponseController {
       $settle_payment_callback = (string) $settle_payment->getBody();
 
       if (!$settle_payment_callback === 'OK') {
-        // @todo: Logger call ($settle_payment_callback == error message)
+        \Drupal::logger(t('Settle payment failed: @error'),array('@error' => $settle_payment_callback))->warning('SaferpayResponseController.php');
       }
     }
 
