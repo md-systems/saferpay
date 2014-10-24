@@ -161,7 +161,7 @@ class SaferpayResponseController {
     if (!substr($verify_pay_confirm_callback, 0, 2) === 'OK') {
       $this->savePayment($payment, 'payment_failed');
       \Drupal::logger(t('Payment verification failed: @error'),array('@error' => $verify_pay_confirm_callback))->warning('SaferpayResponseController.php');
-
+      // @todo: drupal_set_message Payment verification failed
     }
 
     // Settle Payment
@@ -183,6 +183,7 @@ class SaferpayResponseController {
 
       if (!$settle_payment_callback === 'OK') {
         \Drupal::logger(t('Settle payment failed: @error'),array('@error' => $settle_payment_callback))->warning('SaferpayResponseController.php');
+        // @todo: drupal_set_message Payment settlement failed
       }
     }
 
