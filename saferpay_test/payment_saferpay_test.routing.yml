@@ -19,10 +19,9 @@ saferpay_test.pay_complete:
   requirements:
     _access: 'TRUE'
 
-
-saferpay_test.payment_form:
-  path: '/saferpay/PaymentTestForm'
+saferpay_test.saferpay_test_form:
+  path: '/saferpay/SaferpayTestForm'
   defaults:
-    _controller: '\Drupal\payment_saferpay_test\Controller\SaferpayTestController::payComplete'
+    _form: '\Drupal\payment_saferpay_test\Form\SaferpayTestForm'
   requirements:
     _access: 'TRUE'
