@@ -1,0 +1,28 @@
+saferpay_test.create_pay_init:
+  path: '/hosting/CreatePayInit.asp'
+  defaults:
+    _controller: '\Drupal\payment_saferpay_test\Controller\SaferpayTestController::createPayInit'
+  requirements:
+    _access: 'TRUE'
+
+saferpay_test.verify_pay_confirm:
+  path: '/hosting/VerifyPayConfirm.asp'
+  defaults:
+    _controller: '\Drupal\payment_saferpay_test\Controller\SaferpayTestController::verifyPayConfirm'
+  requirements:
+    _access: 'TRUE'
+
+saferpay_test.pay_complete:
+  path: '/hosting/PayCompleteV2.asp'
+  defaults:
+    _controller: '\Drupal\payment_saferpay_test\Controller\SaferpayTestController::payComplete'
+  requirements:
+    _access: 'TRUE'
+
+
+saferpay_test.payment_form:
+  path: '/saferpay/PaymentTestForm'
+  defaults:
+    _controller: '\Drupal\payment_saferpay_test\Controller\SaferpayTestController::payComplete'
+  requirements:
+    _access: 'TRUE'

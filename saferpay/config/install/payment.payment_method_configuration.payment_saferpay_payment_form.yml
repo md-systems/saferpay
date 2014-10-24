@@ -1,0 +1,12 @@
+id: payment_saferpay_payment_form
+label: 'Saferpay Payment Form'
+ownerId: 1
+pluginConfiguration:
+  message_text: 'Saferpay Payment Form'
+  message_text_format: plain_text
+  status: payment_pending
+  account_id: 99867-94913159
+  spPassword: XAjc3Kna
+  settle_option: 1
+pluginId: payment_saferpay_payment_form
+status: true

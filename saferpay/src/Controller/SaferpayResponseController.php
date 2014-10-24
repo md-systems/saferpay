@@ -75,7 +75,7 @@ class SaferpayResponseController {
   public function processSCDResponse(Payment $payment) {
     $scd_response = simplexml_load_string($_GET['DATA']);
     if ($scd_response['RESULT'] != 0) {
-      // @todo Add message.
+      // @todo Add logger message.
       drupal_set_message(t('Credit card verification failed: @error.', array('@error' => $scd_response['DESCRIPTION'])), 'error');
       return new RedirectResponse('payment/' . $payment->id());
     }
@@ -155,13 +155,6 @@ class SaferpayResponseController {
     $plugin_definition = $payment->getPaymentMethod()->getPluginDefinition();
     $pay_confirm_data = array('DATA' => $request->get('DATA'), 'SIGNATURE' => $request->get('SIGNATURE'), 'ACCOUNTID' => $plugin_definition['account_id']);
 
-    // Test Configuration see PaymentPage setup SaferPay.
-    if ($plugin_definition['test_mode']) {
-      $pay_confirm_data['ACCOUNTID'] = '99867-94913159';
-      $pay_confirm_data['spPassword'] = 'XAjc3Kna';
-    }
-
-    // @todo: Don't hardcode the URL, get it from the configuration.
     $verify_pay_confirm = \Drupal::httpClient()->get($plugin_definition['authorization_link'], array('query' => $pay_confirm_data));
     $verify_pay_confirm_callback = (string) $verify_pay_confirm->getBody();
 
@@ -172,10 +165,10 @@ class SaferpayResponseController {
 
     // Settle Payment
     if ($plugin_definition['settle_option']) {
+      parse_str(drupal_substr($verify_pay_confirm_callback, 3), $result_output);
       $settle_data = array(
         'ACCOUNTID' => $plugin_definition['account_id'],
-        //'ID' => substr($verify_pay_confirm_callback, 6, 33), @todo: Find a way to correctly retreive the ID from callback.
-        'ID' => '123456789',
+        'ID' => $result_output['ID'],
       );
 
       // Test Configuration see PaymentPage setup SaferPay.
@@ -204,7 +197,9 @@ class SaferpayResponseController {
    *   The Payment Entity type.
    */
   public function processFailResponse(Request $request, PaymentInterface $payment) {
+    $this->savePayment($payment, 'payment_failed');
 
+    // @todo: Logger & drupal_set_message payment failed
   }
 
   /**
@@ -216,7 +211,9 @@ class SaferpayResponseController {
    *   The Payment Entity type.
    */
   public function processBackResponse(Request $request, PaymentInterface $payment) {
+    $this->savePayment($payment, 'payment_cancelled');
 
+    // @todo: Logger & drupal_set_message payment cancelled
   }
 
   /**
@@ -236,7 +233,9 @@ class SaferpayResponseController {
    *   The Payment Entity type.
    */
   public function processNotifyResponse(Request $request, PaymentInterface $payment) {
+    $this->savePayment($payment, 'payment_config');
 
+    // @todo: Logger & drupal_set_message payment config.
   }
 
   /**

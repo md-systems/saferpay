@@ -64,11 +64,8 @@ class SaferpayPaymentFormDeriver extends DeriverBase implements ContainerDeriver
         $configuration_plugin = $this->paymentMethodConfigurationManager->createInstance($payment_method->getPluginId(), $payment_method->getPluginConfiguration());
         $this->derivatives[$payment_method->id()] = array(
             //'active' => $payment_method->status(),
-            'test_mode' => $configuration_plugin->getTestMode(),
             'account_id' => $configuration_plugin->getAccountId(),
-            'payment_link' => $configuration_plugin->getPaymentLink(),
-            'authorization_link' => $configuration_plugin->getAuthorizationLink(),
-            'settlement_link' => $configuration_plugin->getSettlementLink(),
+            'spPassword' => $configuration_plugin->getSpPassword(),
             'settle_option' => $configuration_plugin->getSettleOption(),
           ) + $base_plugin_definition;
       }

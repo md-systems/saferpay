@@ -1,0 +1,4 @@
+payment_link: 'https://www.saferpay.com'
+create_pay_init: '/hosting/CreatePayInit.asp'
+verify_pay_confirm: '/hosting/VerifyPayConfirm.asp'
+pay_complete: '/hosting/PayCompleteV2.asp'

@@ -98,6 +98,8 @@ class SaferpayPaymentFormMethod extends PaymentMethodBase implements ContainerFa
 
     $generator = \Drupal::urlGenerator();
 
+    $payment_config = \Drupal::config('payment_saferpay.settings');
+
     /** @var \Drupal\currency\Entity\CurrencyInterface $currency */
     $currency = Currency::load($payment->getCurrencyCode());
 
@@ -114,19 +116,9 @@ class SaferpayPaymentFormMethod extends PaymentMethodBase implements ContainerFa
       'NOTIFYURL' => $generator->generateFromRoute('payment_saferpay.response_notify', array('payment' => $payment->id()), array('absolute' => TRUE)),
     );
 
-    if ($this->pluginDefinition['test_mode']) {
-      $payment_data['ACCOUNTID'] = '99867-94913159';
-      $payment_data['spPassword'] = 'XAjc3Kna';
-    }
-
-
-    $saferpay_callback = \Drupal::httpClient()->get($this->pluginDefinition['payment_link'], array('query' => $payment_data));
+    $payment_link = $payment_config->get('payment_link') . $payment_config->get('create_pay_init');
+    $saferpay_callback = \Drupal::httpClient()->get($payment_link, array('query' => $payment_data));
     $saferpay_redirect_url = (string) $saferpay_callback->getBody();
-
-    $redirect_url = Url::fromUri($this->pluginDefinition['payment_link'], array(
-      'absolute' => TRUE,
-      'query' => $payment_data,
-    ))->toString();
 
     $response = new RedirectResponse($saferpay_redirect_url);
     $listener = function (FilterResponseEvent $event) use ($response) {
@@ -136,11 +128,6 @@ class SaferpayPaymentFormMethod extends PaymentMethodBase implements ContainerFa
     $this->eventDispatcher->addListener(KernelEvents::RESPONSE, $listener, 999);
 
     $payment->save();
-
-//    $payment = $this->getPayment();
-//    $payment->setPaymentStatus($this->paymentStatusManager->createInstance('payment_success'));
-//    $payment->save();
-//    $payment->getPaymentType()->resumeContext();
   }
 
   /**

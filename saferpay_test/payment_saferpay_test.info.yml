@@ -1,0 +1,8 @@
+description: Supports Saferpay's automated tests.
+core: 8.x
+dependencies:
+  - payment_saferpay
+name: Payment Saferpay testing
+package: Saferpay
+hidden: true
+type: module
