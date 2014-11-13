@@ -60,7 +60,7 @@ class SaferpayPaymentFormMethod extends PaymentMethodBase implements ContainerFa
    */
   public function __construct(array $configuration, $plugin_id, array $plugin_definition, EventDispatcherInterface $event_dispatcher, Token $token, ModuleHandlerInterface $module_handler, PaymentStatusManager $payment_status_manager) {
     $configuration += $this->defaultConfiguration();
-    parent::__construct($configuration, $plugin_id, $plugin_definition, $event_dispatcher, $token, $module_handler);
+    parent::__construct($configuration, $plugin_id, $plugin_definition, $module_handler, $event_dispatcher, $token);
     $this->paymentStatusManager = $payment_status_manager;
 
     $this->pluginDefinition['message_text'] = '';
