@@ -7,6 +7,7 @@
 
 namespace Drupal\payment_saferpay\Tests;
 
+use Drupal\currency\Entity\Currency;
 use Drupal\node\NodeTypeInterface;
 use Drupal\simpletest\WebTestBase;
 
@@ -70,7 +71,7 @@ class SaferpayPaymentFormTest extends WebTestBase {
       $this->field_name => array(
         'plugin_configuration' => array(
           'amount' => '123',
-          'currency_code' => 'CHF',
+          'currency_code' => 'XXX',
           'name' => 'payment_basic',
           'payment_id' => NULL,
           'quantity' => '2',
@@ -137,7 +138,7 @@ class SaferpayPaymentFormTest extends WebTestBase {
    */
   function calculateAmount($amount, $quantity, $currency_code) {
     $base_amount = $amount * $quantity;
-    $currency = \Drupal\currency\Entity\Currency::load($currency_code);
+    $currency = Currency::load($currency_code);
     return intval($base_amount * $currency->getSubunits());
   }
 
@@ -164,7 +165,7 @@ class SaferpayPaymentFormTest extends WebTestBase {
       'field_storage' => $field_storage,
       'bundle' => $type->id(),
       'label' => $label,
-      'settings' => array('currency_code' => 'CHF'),
+      'settings' => array('currency_code' => 'XXX'),
     ));
     $instance->save();
 
