@@ -150,6 +150,7 @@ class SaferpayResponseController {
    *   Request
    * @param PaymentInterface $payment
    *   The Payment Entity type.
+   * @return \Symfony\Component\HttpFoundation\Response
    */
   public function processSuccessResponse(Request $request, PaymentInterface $payment) {
     $plugin_definition = $payment->getPaymentMethod()->getPluginDefinition();
@@ -159,10 +160,9 @@ class SaferpayResponseController {
     $verify_pay_confirm_callback = (string) $verify_pay_confirm->getBody();
 
     if (!substr($verify_pay_confirm_callback, 0, 2) === 'OK') {
-      $this->savePayment($payment, 'payment_failed');
       \Drupal::logger(t('Payment verification failed: @error'),array('@error' => $verify_pay_confirm_callback))->warning('SaferpayResponseController.php');
       drupal_set_message(t('Payment verification failed: @error.', array('@error' => $verify_pay_confirm_callback)), 'error');
-
+      return $this->savePayment($payment, 'payment_failed');
     }
 
     // Settle Payment
@@ -189,7 +189,7 @@ class SaferpayResponseController {
       }
     }
 
-    $this->savePayment($payment, 'payment_success');
+    return $this->savePayment($payment, 'payment_success');
   }
 
   /**
@@ -199,12 +199,12 @@ class SaferpayResponseController {
    *   Request
    * @param PaymentInterface $payment
    *   The Payment Entity type.
+   * @return \Symfony\Component\HttpFoundation\Response
    */
   public function processFailResponse(Request $request, PaymentInterface $payment) {
-    $this->savePayment($payment, 'payment_failed');
     drupal_set_message('Payment failed');
     \Drupal::logger('Payment settlement failed')->warning('SaferpayResponseController.php');
-
+    return $this->savePayment($payment, 'payment_failed');
   }
 
   /**
@@ -246,15 +246,17 @@ class SaferpayResponseController {
   /**
    * Saves success/cancelled/failed payment.
    *
-   * @param $payment
-   *  Payment Interface.
+   * @param \Drupal\payment\Entity\PaymentInterface $payment
+   *  Payment Interface
    * @param string $status
-   *  Payment Status
+   *  Payment status to set
+   *
+   * @return \Symfony\Component\HttpFoundation\RedirectResponse
    */
   public function savePayment(PaymentInterface $payment, $status = 'payment_failed') {
     $payment->setPaymentStatus(\Drupal::service('plugin.manager.payment.status')
       ->createInstance($status));
     $payment->save();
-    $payment->getPaymentType()->resumeContext();
+    return new RedirectResponse($payment->getPaymentType()->getResumeContextResponse()->getRedirectUrl()->toString());
   }
 }

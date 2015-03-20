@@ -1,0 +1,31 @@
+payment.plugin_configuration.payment_method_configuration.payment_saferpay_payment_form:
+  type: payment.plugin_configuration.payment_method_configuration.payment_base
+  mapping:
+    status:
+      type: string
+      label: Target status
+    account_id:
+      type: string
+      label: Account ID
+    spPassword:
+      type: string
+      label: Special password
+    settle_option:
+      type: integer
+      label: Settle option
+payment_saferpay.settings:
+  type: mapping
+  label: Saferpay settings
+  mapping:
+    payment_link:
+      type: string
+      label: Payment link
+    create_pay_init:
+      type: string
+      label: Create pay initialization
+    verify_pay_confirm:
+      type: string
+      label: Verify payment confirmation
+    pay_complete:
+      type: string
+      label: Payment complete

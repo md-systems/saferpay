@@ -98,8 +98,7 @@ class SaferpayPaymentFormTest extends WebTestBase {
    * Tests succesfull Saferpay payment.
    */
   function testSaferpaySuccessPayment() {
-    $payment_config = \Drupal::config('payment_saferpay.settings');
-    $payment_config->set('payment_link', $GLOBALS['base_root']);
+    $payment_config = \Drupal::configFactory()->getEditable('payment_saferpay.settings')->set('payment_link', $GLOBALS['base_root']);
     $payment_config->save();
 
     // Retrieve plugin configuration of created node
@@ -170,7 +169,7 @@ class SaferpayPaymentFormTest extends WebTestBase {
     $instance->save();
 
     // Assign display settings for the 'default' and 'teaser' view modes.
-    entity_get_display('node', $type->type, 'default')
+    entity_get_display('node', $type->id(), 'default')
       ->setComponent($this->field_name, array(
         'label' => 'hidden',
         'type' => 'text_default',
