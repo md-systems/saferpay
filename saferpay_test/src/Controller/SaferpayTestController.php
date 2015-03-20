@@ -34,7 +34,7 @@ class SaferpayTestController {
   public function createPayInit() {
     $data = $_GET;
 
-    return new RedirectResponse(Url::fromRoute('saferpay_test.saferpay_test_form'));
+    return new RedirectResponse(Url::fromRoute('saferpay_test.saferpay_test_form')->toString());
   }
 
   /**

@@ -118,7 +118,7 @@ class SaferpayPaymentFormTest extends WebTestBase {
     $this->assertEqual($calculated_amount, 24600);
 
     // Create saferpay payment
-    $this->drupalPostForm('node/' . $this->node->id(), array('container[select][container][payment_method_id]' => 'payment_saferpay_payment_form:payment_saferpay_payment_form'), t('Pay'));
+    $this->drupalPostForm('node/' . $this->node->id(), array(), t('Pay'));
 
     $this->drupalPostForm(NULL, array(), t('Pay'));
   }

@@ -9,7 +9,6 @@ namespace Drupal\payment_saferpay_test\Form;
 
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\taxonomy\TermInterface;
 
 /**
  * Builds the form to delete a forum term.
@@ -26,7 +25,7 @@ class SaferpayTestForm extends FormBase {
   /**
    * {@inheritdoc}
    */
-  public function buildForm(array $form, FormStateInterface $form_state, TermInterface $taxonomy_term = NULL) {
+  public function buildForm(array $form, FormStateInterface $form_state) {
     $form['submit'] = array(
       '#type' => 'submit',
       '#value' => t('Test It!'),

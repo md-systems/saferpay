@@ -7,7 +7,6 @@
 
 namespace Drupal\payment_saferpay\Plugin\Payment\Method;
 
-use Drupal\Component\Plugin\ConfigurablePluginInterface;
 use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\Core\Session\AccountInterface;
@@ -20,7 +19,7 @@ use Drupal\payment\Plugin\Payment\Status\PaymentStatusManager;
 use Drupal\payment\Response\Response;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
-
+use Drupal\Component\Plugin\ConfigurablePluginInterface;
 /**
  * Saferpay Payment Form payment method.
  *
@@ -67,14 +66,12 @@ class SaferpayPaymentFormMethod extends PaymentMethodBase implements ContainerFa
 
     $payment->save();
 
+    //Problems ahead! Still needs some work here
     $payment_link = $payment_config->get('payment_link') . $payment_config->get('create_pay_init');
     $saferpay_callback = \Drupal::httpClient()->get($payment_link, array('query' => $payment_data));
-    $saferpay_redirect_url = (string) $saferpay_callback->getBody();
-
-    $this->response = new Response(Url::fromUri($payment_link, array(
-      'absolute' => TRUE,
-      'query' => $payment_data,
-    )));
+    $this->response = $saferpay_callback;
+    // $saferpay_redirect_url = Url::fromUri($saferpay_callback->getBody());
+    // $this->response = new Response($saferpay_redirect_url);
   }
 
   public function getPaymentExecutionResult(){
