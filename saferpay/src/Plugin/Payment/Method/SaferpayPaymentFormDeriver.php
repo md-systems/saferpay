@@ -64,6 +64,7 @@ class SaferpayPaymentFormDeriver extends DeriverBase implements ContainerDeriver
         $configuration_plugin = $this->paymentMethodConfigurationManager->createInstance($payment_method->getPluginId(), $payment_method->getPluginConfiguration());
         $this->derivatives[$payment_method->id()] = array(
             //'active' => $payment_method->status(),
+            'id' => 'payment_saferpay_payment_form:' . $payment_method->id(),
             'account_id' => $configuration_plugin->getAccountId(),
             'message_text' => '',
             'message_text_format' => '',

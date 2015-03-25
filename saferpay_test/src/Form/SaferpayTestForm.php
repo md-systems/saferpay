@@ -9,6 +9,9 @@ namespace Drupal\payment_saferpay_test\Form;
 
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\payment\Entity\Payment;
+use Drupal\payment_datatrans\DatatransHelper;
+use Symfony\Component\HttpFoundation\Request;
 
 /**
  * Builds the form to delete a forum term.
@@ -25,10 +28,13 @@ class SaferpayTestForm extends FormBase {
   /**
    * {@inheritdoc}
    */
-  public function buildForm(array $form, FormStateInterface $form_state) {
+  public function buildForm(array $form, FormStateInterface $form_state, Request $request = NULL) {
+    foreach ($request->query->all() as $key => $value) {
+      drupal_set_message($key . $value);
+    }
     $form['submit'] = array(
       '#type' => 'submit',
-      '#value' => t('Test It!'),
+      '#value' => t('Pay'),
     );
 
     return $form;

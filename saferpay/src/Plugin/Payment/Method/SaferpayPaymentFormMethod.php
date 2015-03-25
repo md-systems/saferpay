@@ -7,19 +7,14 @@
 
 namespace Drupal\payment_saferpay\Plugin\Payment\Method;
 
-use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
-use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\Url;
-use Drupal\Core\Utility\Token;
 use Drupal\currency\Entity\Currency;
 use Drupal\payment\PaymentExecutionResult;
 use Drupal\payment\Plugin\Payment\Method\PaymentMethodBase;
-use Drupal\payment\Plugin\Payment\Status\PaymentStatusManager;
 use Drupal\payment\Response\Response;
-use Symfony\Component\DependencyInjection\ContainerInterface;
-use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Drupal\Component\Plugin\ConfigurablePluginInterface;
+
 /**
  * Saferpay Payment Form payment method.
  *
@@ -32,18 +27,24 @@ use Drupal\Component\Plugin\ConfigurablePluginInterface;
 class SaferpayPaymentFormMethod extends PaymentMethodBase implements ContainerFactoryPluginInterface, ConfigurablePluginInterface {
 
   /**
-   * @var \Drupal\payment\Response\Response
-   */
-  protected $response;
-
-  /**
-   * Performs the actual payment execution.
+   * Stores a configuration.
    *
+   * @param string $key
+   *   Configuration key.
+   * @param mixed $value
+   *   Configuration value.
+   *
+   * @return $this
    */
-  protected function doExecutePayment() {
+  public function setConfigField($key, $value) {
+    $this->configuration[$key] = $value;
+
+    return $this;
+  }
+
+  public function getPaymentExecutionResult(){
     /** @var \Drupal\payment\Entity\PaymentInterface $payment */
     $payment = $this->getPayment();
-
     $generator = \Drupal::urlGenerator();
 
     $payment_config = \Drupal::config('payment_saferpay.settings');
@@ -66,16 +67,11 @@ class SaferpayPaymentFormMethod extends PaymentMethodBase implements ContainerFa
 
     $payment->save();
 
-    //Problems ahead! Still needs some work here
     $payment_link = $payment_config->get('payment_link') . $payment_config->get('create_pay_init');
     $saferpay_callback = \Drupal::httpClient()->get($payment_link, array('query' => $payment_data));
-    $this->response = $saferpay_callback;
-    // $saferpay_redirect_url = Url::fromUri($saferpay_callback->getBody());
-    // $this->response = new Response($saferpay_redirect_url);
-  }
-
-  public function getPaymentExecutionResult(){
-  return new PaymentExecutionResult($this->response);
+    $saferpay_redirect_url = (string) $saferpay_callback->getBody();
+    $response = new Response(Url::fromUri($saferpay_redirect_url));
+    return new PaymentExecutionResult($response);
 }
 
   /**
@@ -83,34 +79,6 @@ class SaferpayPaymentFormMethod extends PaymentMethodBase implements ContainerFa
    */
   protected function getSupportedCurrencies() {
     return TRUE;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  protected function doCapturePaymentAccess(AccountInterface $account) {
-    // TODO: Implement doCapturePaymentAccess() method.
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  protected function doCapturePayment() {
-    // TODO: Implement doCapturePayment() method.
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  protected function doRefundPaymentAccess(AccountInterface $account) {
-    // TODO: Implement doRefundPaymentAccess() method.
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  protected function doRefundPayment() {
-    // TODO: Implement doRefundPayment() method.
   }
 
 }

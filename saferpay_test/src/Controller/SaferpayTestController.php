@@ -29,12 +29,12 @@ class SaferpayTestController {
   /***
    * With CreatePayInit() a payment link can be generated.
    *
-   * @return RedirectResponse
+   * @return Response
    */
   public function createPayInit() {
     $data = $_GET;
 
-    return new RedirectResponse(Url::fromRoute('saferpay_test.saferpay_test_form')->toString());
+    return new Response(Url::fromRoute('saferpay_test.saferpay_test_form')->setAbsolute()->toString());
   }
 
   /**
