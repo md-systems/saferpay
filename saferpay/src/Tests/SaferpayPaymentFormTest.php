@@ -106,14 +106,12 @@ class SaferpayPaymentFormTest extends WebTestBase {
    * Tests succesfull Saferpay payment.
    */
   function testSaferpaySuccessPayment() {
-    $generator = \Drupal::urlGenerator();
 
     // Modifies the saferpay configuration for testing purposes.
     $payment_config = \Drupal::configFactory()->getEditable('payment_saferpay.settings')->set('payment_link', $GLOBALS['base_root']);
     $payment_config->save();
 
     // Retrieve plugin configuration of created node.
-    $plugin_configuration = $this->node->{$this->fieldName}->plugin_configuration;
 
     $saferpay_configuration = array(
       'plugin_form[account_id]' => '99867-94913159',
@@ -123,16 +121,16 @@ class SaferpayPaymentFormTest extends WebTestBase {
     $this->drupalPostForm('admin/config/services/payment/method/configuration/payment_saferpay_payment_form', $saferpay_configuration, t('Save'));
 
     // Create saferpay payment.
-    $this->drupalPostForm('node/' . $this->node->id(), array(), t('Pay'));
+    $this->drupalPostForm('node/' . $this->node->id(), NULL, t('Pay'));
 
     // Retrieve plugin configuration of created node
     $plugin_configuration = $this->node->{$this->fieldName}->plugin_configuration;
 
-    $calculated_amount = $this->calculateAmount($plugin_configuration['amount'], $plugin_configuration['quantity'], $plugin_configuration['currency_code']);
-    $this->assertText('amount' . $calculated_amount);
-
     // Array of Saferpay payment method configuration.
     $saferpay_payment_method_configuration = entity_load('payment_method_configuration', 'payment_saferpay_payment_form')->getPluginConfiguration();
+
+    $calculated_amount = $this->calculateAmount($plugin_configuration['amount'], $plugin_configuration['quantity'], $plugin_configuration['currency_code']);
+    $this->assertText('AMOUNT' . $calculated_amount);
 
     // Assert AccountID.
     $this->assertEqual($saferpay_payment_method_configuration['account_id'], '99867-94913159');
@@ -141,7 +139,7 @@ class SaferpayPaymentFormTest extends WebTestBase {
     $this->assertEqual($payment_config->get('payment_link'), $GLOBALS['base_root']);
     $this->assertEqual($saferpay_payment_method_configuration['settle_option'], 1);
 
-    $this->drupalPostForm(NULL, array(), t('Pay'));
+    $this->drupalPostForm(NULL, array(), t('Submit'));
 
     //Check out the payment overview page.
     $this->drupalGet('admin/content/payment');
@@ -151,6 +149,12 @@ class SaferpayPaymentFormTest extends WebTestBase {
 
     // Check for correct Payment Method.
     $this->assertText('Saferpay');
+
+    $payment = entity_load('payment', 1);
+    $payment_method = $payment->getPaymentMethod();
+    if (!$payment_method) {
+      throw new \Exception('No payment method');
+    }
 
     $this->assertNoText('Failed');
 

@@ -34,8 +34,12 @@ class SaferpayTestController {
   public function createPayInit() {
     $data = $_GET;
 
-    return new Response(Url::fromRoute('saferpay_test.saferpay_test_form')->setAbsolute()->toString());
+    return new Response(Url::fromRoute('saferpay_test.saferpay_test_form', array(), array(
+      'query' => $data,
+    ))->setAbsolute()->toString());
   }
+
+
 
   /**
    * Verifies the digital signature of the confirmation message (MSGTYPE=PayConfirm)

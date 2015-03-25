@@ -10,7 +10,6 @@ namespace Drupal\payment_saferpay_test\Form;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\payment\Entity\Payment;
-use Drupal\payment_datatrans\DatatransHelper;
 use Symfony\Component\HttpFoundation\Request;
 
 /**
@@ -32,9 +31,30 @@ class SaferpayTestForm extends FormBase {
     foreach ($request->query->all() as $key => $value) {
       drupal_set_message($key . $value);
     }
-    $form['submit'] = array(
+
+    $form_elements = array(
+      'amount' => $request->query->get('amount'),
+      'currency' => $request->query->get('currency'),
+      'status' => 'success',
+    );
+
+    foreach ($form_elements as $key => $value) {
+      $form[$key] = array(
+        '#type' => 'hidden',
+        '#value' => $value,
+      );
+    }
+
+    // Don't generate the route, use the submitted url.
+    $response_url_key = \Drupal::state()->get('saferpay.return_url_key') ?: 'success';
+    $response_url = $request->query->get($response_url_key . 'Url');
+
+    $form['#action'] = $response_url;
+    $form['actions']['#type'] = 'actions';
+    $form['actions']['submit'] = array(
       '#type' => 'submit',
-      '#value' => t('Pay'),
+      '#value' => $this->t('Submit'),
+      '#button_type' => 'primary',
     );
 
     return $form;
@@ -44,7 +64,7 @@ class SaferpayTestForm extends FormBase {
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-    drupal_set_message("Form submitted");
+    drupal_set_message("Validate Form");
   }
 
 }
