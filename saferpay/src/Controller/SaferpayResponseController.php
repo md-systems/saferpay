@@ -15,7 +15,10 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Saferpay response controller.
+ * Class SaferpayResponseController
+ *   Saferpay Response Controller
+ *
+ * @package Drupal\payment_saferpay\Controller
  */
 class SaferpayResponseController {
 
@@ -156,7 +159,9 @@ class SaferpayResponseController {
     $plugin_definition = $payment->getPaymentMethod()->getPluginDefinition();
     $pay_confirm_data = array('DATA' => $request->get('DATA'), 'SIGNATURE' => $request->get('SIGNATURE'), 'ACCOUNTID' => $plugin_definition['account_id']);
 
-    $verify_pay_confirm = \Drupal::httpClient()->get($plugin_definition['authorization_link'], array('query' => $pay_confirm_data));
+    // Save the successful payment.
+    return $this->savePayment($payment, 'payment_success');
+    $verify_pay_confirm = \Drupal::httpClient()->get(\Drupal::urlGenerator()->generateFromRoute('payment_saferpay_payment_form.verify_pay_confirm'), array('query' => $pay_confirm_data));
     $verify_pay_confirm_callback = (string) $verify_pay_confirm->getBody();
 
     if (!substr($verify_pay_confirm_callback, 0, 2) === 'OK') {
@@ -259,4 +264,5 @@ class SaferpayResponseController {
     $payment->save();
     return new RedirectResponse($payment->getPaymentType()->getResumeContextResponse()->getRedirectUrl()->toString());
   }
+
 }
