@@ -40,9 +40,8 @@ class SaferpayTestForm extends FormBase {
       'notify_url' => $request->query->get('NOTIFYURL'),
       'status' => 'success',
     );
-
     $DATA= array(
-      '@MSGTYPE' => '',
+      '@MSGTYPE' => 'PayConfirm',
       '@TOKEN' => '',
       '@VTVERIFY' => '',
       '@KEYID' => '',
@@ -82,7 +81,6 @@ class SaferpayTestForm extends FormBase {
     );
 
     $response_url .= '?DATA=' . urlencode($data_string);
-
     $form['#action'] = $response_url;
     $form['actions']['#type'] = 'actions';
     $form['actions']['submit'] = array(

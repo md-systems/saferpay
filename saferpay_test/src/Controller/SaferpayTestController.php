@@ -8,7 +8,10 @@
 namespace Drupal\payment_saferpay_test\Controller;
 
 use Drupal\Core\Url;
+use Drupal\Component\Utility\SafeMarkup;
+use Drupal\Component\Utility\Crypt;
 use Symfony\Component\HttpFoundation\RedirectResponse;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -29,14 +32,13 @@ class SaferpayTestController {
   /***
    * With CreatePayInit() a payment link can be generated.
    *
+   * @param Request
+   *
    * @return Response
    */
-  public function createPayInit() {
-    $data = $_GET;
-
+  public function createPayInit(Request $request = NULL) {
     return new Response(Url::fromRoute('saferpay_test.saferpay_test_form', array(), array(
-      'query' => $data,
-    ))->setAbsolute()->toString());
+      'query' => $request->query->all()))->setAbsolute()->toString());
   }
 
 
@@ -48,14 +50,14 @@ class SaferpayTestController {
    *
    * @return Response
    */
-  public function verifyPayConfirm() {
-    return new Response("Verify Pay Confirm");
+  public function verifyPayConfirm(Request $request = NULL) {
+    return new Response("OK");
   }
 
   /**
    * Settles the payment.
    */
   public function payComplete() {
-    return new Response("Pay Complete");
+    return new Response("OK");
   }
 }

@@ -69,7 +69,7 @@ class SaferpayPaymentFormMethod extends PaymentMethodBase implements ContainerFa
 
     $payment_link = $payment_config->get('payment_link') . $payment_config->get('create_pay_init');
     $saferpay_callback = \Drupal::httpClient()->get($payment_link, array('query' => $payment_data));
-    $saferpay_redirect_url = (string) $saferpay_callback->getBody();
+    $saferpay_redirect_url = $saferpay_callback->getBody();
     $response = new Response(Url::fromUri($saferpay_redirect_url));
     return new PaymentExecutionResult($response);
 }
