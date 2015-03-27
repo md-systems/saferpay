@@ -7,19 +7,18 @@
 namespace Drupal\payment_saferpay\Controller;
 
 use Drupal\Component\Utility\Crypt;
-use Drupal\Component\Utility\Unicode;
 use Drupal\contact\Entity\Message;
 use Drupal\payment\Entity\Payment;
 use Drupal\payment\Entity\PaymentInterface;
 use Drupal\payment_saferpay\SaferpayException;
+use GuzzleHttp\Exception\RequestException;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Drupal\payment\Payment as PaymentServiceWrapper;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Class SaferpayResponseController
- *   Saferpay Response Controller
+ * Saferpay Response Controller
  *
  * @package Drupal\payment_saferpay\Controller
  */
@@ -156,6 +155,7 @@ class SaferpayResponseController {
    *   Request
    * @param PaymentInterface $payment
    *   The Payment Entity type.
+   *
    * @return \Symfony\Component\HttpFoundation\Response
    */
   public function processSuccessResponse(Request $request, PaymentInterface $payment) {
@@ -166,16 +166,20 @@ class SaferpayResponseController {
      // Save the successful payment.
     $this->savePayment($payment, 'payment_success');
     $payment_config = \Drupal::configFactory()->getEditable('payment_saferpay.settings');
-    $verify_pay_confirm = \Drupal::httpClient()->get($payment_config->get('payment_link') . \Drupal::urlGenerator()->generateFromRoute('saferpay_test.verify_pay_confirm'), array('query' => $pay_confirm_data));
-    $verify_pay_confirm_callback = (string) $verify_pay_confirm->getBody();
 
+    // Verify with the payment provider that the payment is legitimate.
+    $verify_url = $payment_config->get('payment_link') . $payment_config->get('verify_pay_confirm');
+    $verify_pay_confirm = \Drupal::httpClient()->get($verify_url, array('query' => $pay_confirm_data));
+    $verify_pay_confirm_callback = (string) $verify_pay_confirm->getBody();
+    debug($verify_pay_confirm_callback);
+    // If the verification failed, return with an error.
     if (!(substr($verify_pay_confirm_callback, 0, 2) == 'OK')) {
       \Drupal::logger(t('Payment verification failed: @error'),array('@error' => $verify_pay_confirm_callback))->warning('SaferpayResponseController.php');
       drupal_set_message(t('Payment verification failed: @error.', array('@error' => $verify_pay_confirm_callback)), 'error');
       return $this->savePayment($payment, 'payment_failed');
     }
 
-    // Settle Payment
+    // Otherwise Settle and return.
     if ($plugin_definition['settle_option']) {
 
       // Test Configuration see PaymentPage setup SaferPay.

@@ -48,14 +48,18 @@ class SaferpayTestController {
    * returned to the shop via SUCCESSLINK or NOTIFYURL in order to ensure
    * that the response has not been manipulated.
    *
+   * @param Request
+   *
    * @return Response
    */
   public function verifyPayConfirm(Request $request = NULL) {
-    return new Response("OK");
+    return new Response(SafeMarkup::format("OK:ID=@ID&TOKEN=@TOKEN", $request->query->get('DATA')));
   }
 
   /**
    * Settles the payment.
+   *
+   * @return Response
    */
   public function payComplete() {
     return new Response("OK");

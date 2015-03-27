@@ -12,6 +12,7 @@ use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\payment\Entity\Payment;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpKernel\Profiler\Profile;
 
 /**
  * Builds the form to delete a forum term.
@@ -33,49 +34,49 @@ class SaferpayTestForm extends FormBase {
       drupal_set_message($key . $value);
     }
 
-    $form_elements = array(
-      'success_link' => $request->query->get('SUCCESSLINK'),
-      'fail_link' => $request->query->get('FAILLINK'),
-      'back_link' => $request->query->get('BACKLINK'),
-      'notify_url' => $request->query->get('NOTIFYURL'),
-      'status' => 'success',
-    );
+    // Set up Test Data.
     $DATA= array(
       '@MSGTYPE' => 'PayConfirm',
-      '@TOKEN' => '',
-      '@VTVERIFY' => '',
-      '@KEYID' => '',
-      '@ID' => '',
+      '@TOKEN' => '(unused)',
+      '@VTVERIFY' => '(obsolete)',
+      '@KEYID' => '1-0',
+      '@ID' => 'zzUIU8br3YGdvAx6t13QAC3vt0nA',
       '@ACCOUNTID' => $request->query->get('ACCOUNTID'),
-      '@PROVIDERID' => '',
-      '@PROVIDERNAME' => '',
-      '@PAYMENTMETHOD' => '',
-      '@ORDERID' => '',
+      '@PROVIDERID' => '90',
+      '@PROVIDERNAME' => 'Saferpay Test Card',
+      '@PAYMENTMETHOD' => '6',
+      '@ORDERID' => '84',
       '@AMOUNT' => $request->query->get('AMOUNT'),
       '@CURRENCY' => $request->query->get('CURRENCY'),
-      '@IP' => '',
-      '@IPCOUNTRY' => '',
-      '@CCCOUNTRY' => '',
-      '@MPI_LIABILTYSHIFT' => '',
+      '@IP' => '83.150.36.145',
+      '@IPCOUNTRY' => 'IX',
+      '@CCCOUNTRY' => 'CH',
+      '@MPI_LIABILTYSHIFT' => 'no',
       '@MPI_TX_CAVV' => '',
       '@MPI_XID' => '',
-      '@ECI' => '',
+      '@ECI' => '0',
       '@CAVV' => '',
       '@XID' => '',
     );
 
-    foreach ($form_elements as $key => $value) {
-      $form[$key] = array(
-        '#type' => 'hidden',
-        '#value' => $value,
-      );
+    // Construct the URL for the Submit button.
+    $response_url_key = \Drupal::state()->get('saferpay.return_url_key') ?: 'success';
+    switch($response_url_key){
+      case 'success':
+        $response_url = $request->query->get('SUCCESSLINK');
+        break;
+      case 'fail':
+        $response_url = $request->query->get('FAILLINK');
+        break;
+      case 'back':
+        $response_url = $request->query->get('BACKLINK');
+        break;
+      case 'notify_url':
+        $response_url = $request->query->get('NOTIFYURL');
+        break;
     }
 
-    // Don't generate the route, use the submitted url.
-    $response_url_key = \Drupal::state()->get('saferpay.return_url_key') ?: 'success';
-
-    $response_url = $form_elements[$response_url_key . '_link'];
-
+  // Generate String from formatted XML String and Array of Test Data.
     $data_string = SafeMarkup::format('<IDP MSGTYPE="@MSGTYPE" TOKEN="@TOKEN" VTVERIFY="@VTVERIFY" KEYID="@KEYID" ID="@ID" ACCOUNTID="@ACCOUNTID" PROVIDERID="@PROVIDERID" PROVIDERNAME="@PROVIDERNAME" PAYMENTMETHOD="@PAYMENTMETHOD" ORDERID="@ORDERID" AMOUNT="@AMOUNT" CURRENCY="@CURRENCY" IP="@IP" IPCOUNTRY="@IPCOUNTRY" CCCOUNTRY="@CCCOUNTRY" MPI_LIABILTYSHIFT="@MPI_LIABILTYSHIFT" MPI_TX_CAVV="@MPI_TX_CAVV" MPI_XID="@MPI_XID" ECI="@ECI" CAVV="@CAVV" XID="@XID" >',
       $DATA
     );
