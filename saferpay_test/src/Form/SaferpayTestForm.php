@@ -7,6 +7,7 @@
 
 namespace Drupal\payment_saferpay_test\Form;
 
+use Drupal\Component\Utility\Crypt;
 use Drupal\Component\Utility\SafeMarkup;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
@@ -77,11 +78,12 @@ class SaferpayTestForm extends FormBase {
     }
 
   // Generate String from formatted XML String and Array of Test Data.
-    $data_string = SafeMarkup::format('<IDP MSGTYPE="@MSGTYPE" TOKEN="@TOKEN" VTVERIFY="@VTVERIFY" KEYID="@KEYID" ID="@ID" ACCOUNTID="@ACCOUNTID" PROVIDERID="@PROVIDERID" PROVIDERNAME="@PROVIDERNAME" PAYMENTMETHOD="@PAYMENTMETHOD" ORDERID="@ORDERID" AMOUNT="@AMOUNT" CURRENCY="@CURRENCY" IP="@IP" IPCOUNTRY="@IPCOUNTRY" CCCOUNTRY="@CCCOUNTRY" MPI_LIABILTYSHIFT="@MPI_LIABILTYSHIFT" MPI_TX_CAVV="@MPI_TX_CAVV" MPI_XID="@MPI_XID" ECI="@ECI" CAVV="@CAVV" XID="@XID" >',
+    $data_string = SafeMarkup::format('<IDP MSGTYPE="@MSGTYPE" TOKEN="@TOKEN" VTVERIFY="@VTVERIFY" KEYID="@KEYID" ID="@ID" ACCOUNTID="@ACCOUNTID" PROVIDERID="@PROVIDERID" PROVIDERNAME="@PROVIDERNAME" PAYMENTMETHOD="@PAYMENTMETHOD" ORDERID="@ORDERID" AMOUNT="@AMOUNT" CURRENCY="@CURRENCY" IP="@IP" IPCOUNTRY="@IPCOUNTRY" CCCOUNTRY="@CCCOUNTRY" MPI_LIABILTYSHIFT="@MPI_LIABILTYSHIFT" MPI_TX_CAVV="@MPI_TX_CAVV" MPI_XID="@MPI_XID" ECI="@ECI" CAVV="@CAVV" XID="@XID" />',
       $DATA
     );
+    $signature = \Drupal::state()->get('saferpay.signature') ?: Crypt::hashBase64($data_string);
 
-    $response_url .= '?DATA=' . urlencode($data_string);
+    $response_url .= '?DATA=' . urlencode($data_string) . '&SIGNATURE=' . $signature;
     $form['#action'] = $response_url;
     $form['actions']['#type'] = 'actions';
     $form['actions']['submit'] = array(

@@ -7,6 +7,7 @@
 
 namespace Drupal\payment_saferpay\Tests;
 
+use Drupal\Core\Form\ConfigFormBase;
 use Drupal\currency\Entity\Currency;
 use Drupal\field\Entity\FieldConfig;
 use Drupal\field\Entity\FieldStorageConfig;
@@ -166,7 +167,9 @@ class SaferpayPaymentFormTest extends WebTestBase {
     $this->assertText('CHF 246.00');
     $this->assertText('Completed');
   }
-
+  /**
+   * Tests failed Saferpay payment.
+   */
   function testSaferpayFailedPayment() {
     // Modifies the saferpay configuration for testing purposes.
     $payment_config = \Drupal::configFactory()->getEditable('payment_saferpay.settings')->set('payment_link', $GLOBALS['base_root']);
@@ -174,6 +177,31 @@ class SaferpayPaymentFormTest extends WebTestBase {
 
     // Create saferpay payment
     \Drupal::state()->set('saferpay.return_url_key', 'fail');
+    $this->drupalPostForm('node/' . $this->node->id(), array(), t('Pay'));
+
+    // Finish and save payment
+    $this->drupalPostForm(NULL, array(), t('Submit'));
+
+    // Check out the payment overview page
+    $this->drupalGet('admin/content/payment');
+    $this->assertText('Failed');
+    $this->assertNoText('Success');
+
+    // Check for detailed payment information
+    $this->drupalGet('payment/1');
+    $this->assertText('Failed');
+    $this->assertNoText('Success');
+  }
+  /**
+   * Tests succesfull Saferpay payment with wrong signature.
+   */
+  function testSaferpayWrongSignature() {
+    // Modifies the saferpay configuration for testing purposes.
+    $payment_config = \Drupal::configFactory()->getEditable('payment_saferpay.settings')->set('payment_link', $GLOBALS['base_root']);
+    \Drupal::state()->set('saferpay.signature', 'AAA');
+    $payment_config->save();
+
+    // Create saferpay payment
     $this->drupalPostForm('node/' . $this->node->id(), array(), t('Pay'));
 
     // Finish and save payment

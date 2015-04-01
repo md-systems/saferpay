@@ -53,15 +53,23 @@ class SaferpayTestController {
    * @return Response
    */
   public function verifyPayConfirm(Request $request = NULL) {
-    return new Response(SafeMarkup::format("OK:ID=@ID&TOKEN=@TOKEN", $request->query->get('DATA')));
+
+    if(Crypt::hashBase64($request->query->get('DATA')) == $request->query->get('SIGNATURE')) {
+      return new Response(SafeMarkup::format("OK:ID=1&TOKEN=(unused)", $request->query->all()));
+    }
+    else {
+      return new Response("ERROR: Verification failed");
+    }
   }
 
   /**
    * Settles the payment.
    *
+   * @param Request
+   *
    * @return Response
    */
-  public function payComplete() {
+  public function payComplete(Request $request = NULL) {
     return new Response("OK");
   }
 }
