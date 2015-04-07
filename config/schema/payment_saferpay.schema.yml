@@ -13,6 +13,7 @@ payment.plugin_configuration.payment_method_configuration.payment_saferpay_payme
     settle_option:
       type: integer
       label: Settle option
+
 payment_saferpay.settings:
   type: mapping
   label: Saferpay settings

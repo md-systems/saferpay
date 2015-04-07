@@ -28,8 +28,10 @@ class SaferpayResponseController {
    * Page callback for processing the Saferpay MPI response.
    *
    * @param \Drupal\payment\Entity\Payment $payment
+   *  The payment entity type
    *
    * @return \Symfony\Component\HttpFoundation\RedirectResponse
+   *  Redirect Response
    */
   public function processMPIResponse(Payment $payment) {
     $data = simplexml_load_string($_GET['DATA']);
@@ -74,8 +76,10 @@ class SaferpayResponseController {
    * Page callback for processing the Saferpay SCD response.
    *
    * @param \Drupal\payment\Entity\Payment $payment
+   *  The payment entity type
    *
    * @return \Symfony\Component\HttpFoundation\RedirectResponse
+   *  Redirect Response
    */
   public function processSCDResponse(Payment $payment) {
     $scd_response = simplexml_load_string($_GET['DATA']);
@@ -147,16 +151,19 @@ class SaferpayResponseController {
   }
 
   /**
+   * Simulates the response to a successful pay request
+   *
    * URL to which the customer is to be forwarded to via browser redirect
    * after the successful reservation. Saferpay appends the
    * confirmation message (PayConfirm) by GET to this URL.
    *
-   * @param Request $request
+   * @param \Symfony\Component\HttpFoundation\Request $request
    *   Request
-   * @param PaymentInterface $payment
+   * @param \Drupal\payment\Entity\PaymentInterface $payment
    *   The Payment Entity type.
    *
    * @return \Symfony\Component\HttpFoundation\Response
+   *  The response to the request
    */
   public function processSuccessResponse(Request $request, PaymentInterface $payment) {
     $plugin_definition = $payment->getPaymentMethod()->getPluginDefinition();
@@ -183,10 +190,10 @@ class SaferpayResponseController {
     // Otherwise Settle and return.
     if ($plugin_definition['settle_option']) {
       $data_xml = simplexml_load_string($request->query->get('DATA'));
-      $pay_settle_data = array('ACCOUNTID' => $data_xml['ACCOUNTID'], 'ID' => $data_xml['ID']);
+      $pay_settle_data = array('ACCOUNTID' => (string) $data_xml['ACCOUNTID'], 'ID' => (string) $data_xml['ID']);
 
       // Test Configuration see PaymentPage setup SaferPay.
-      $settle_payment = \Drupal::httpClient()->get($payment_config->get('payment_link') . \Drupal::urlGenerator()->generateFromRoute('saferpay_test.pay_complete'), array('query' => $pay_settle_data));
+      $settle_payment = \Drupal::httpClient()->get($payment_config->get('payment_link') . $payment_config->get('pay_complete'), array('query' => $pay_settle_data));
       $settle_payment_callback = (string) $settle_payment->getBody();
 
       if (!($settle_payment_callback == 'OK')) {
@@ -202,11 +209,13 @@ class SaferpayResponseController {
   /**
    * URL to which the customer is to be forwarded to via browser redirect if the authorization attempt failed.
    *
-   * @param Request $request
+   * @param \Symfony\Component\HttpFoundation\Request $request
    *   Request
-   * @param PaymentInterface $payment
+   * @param \Drupal\payment\Entity\PaymentInterface $payment
    *   The Payment Entity type.
+   *
    * @return \Symfony\Component\HttpFoundation\Response
+   *  The response to the request
    */
   public function processFailResponse(Request $request, PaymentInterface $payment) {
     drupal_set_message('Payment failed');
@@ -217,9 +226,9 @@ class SaferpayResponseController {
   /**
    * URL to which the customer is to be forwarded to via browser redirect if he aborts the transaction.
    *
-   * @param Request $request
+   * @param \Symfony\Component\HttpFoundation\Request $request
    *   Request
-   * @param PaymentInterface $payment
+   * @param \Drupal\payment\Entity\PaymentInterface $payment
    *   The Payment Entity type.
    */
   public function processBackResponse(Request $request, PaymentInterface $payment) {
@@ -239,9 +248,9 @@ class SaferpayResponseController {
    * To facilitate the correlation between request and response it has proven to be useful
    * to add a shop session ID as GET parameter to the NOTIFYURL.
    *
-   * @param Request $request
+   * @param \Symfony\Component\HttpFoundation\Request $request
    *   Request
-   * @param PaymentInterface $payment
+   * @param \Drupal\payment\Entity\PaymentInterface $payment
    *   The Payment Entity type.
    */
   public function processNotifyResponse(Request $request, PaymentInterface $payment) {
@@ -259,6 +268,7 @@ class SaferpayResponseController {
    *  Payment status to set
    *
    * @return \Symfony\Component\HttpFoundation\RedirectResponse
+   *  The response to the request
    */
   public function savePayment(PaymentInterface $payment, $status = 'payment_failed') {
     $payment->setPaymentStatus(\Drupal::service('plugin.manager.payment.status')

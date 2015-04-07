@@ -191,6 +191,11 @@ class SaferpayPaymentFormConfiguration extends PaymentMethodConfigurationBase im
 
   /**
    * Implements form validate callback for self::formElements().
+   *
+   * @param array $element
+   *  The form element
+   * @param array $form
+   *  The form entity
    */
   public function formElementsValidate(array $element, FormStateInterface $form_state, array $form) {
     $values = NestedArray::getValue($form_state->getValues(), $element['#parents']);
