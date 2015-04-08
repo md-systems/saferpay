@@ -42,6 +42,11 @@ class SaferpayPaymentFormMethod extends PaymentMethodBase implements ContainerFa
     return $this;
   }
 
+  /**
+   * Executes the Payment and returns the result
+   *
+   * @return \Drupal\Payment\PaymentExecutionResult
+   */
   public function getPaymentExecutionResult(){
     /** @var \Drupal\payment\Entity\PaymentInterface $payment */
     $payment = $this->getPayment();

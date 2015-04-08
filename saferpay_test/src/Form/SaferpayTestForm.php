@@ -36,7 +36,7 @@ class SaferpayTestForm extends FormBase {
     }
 
     // Set up Test Data.
-    $DATA= array(
+    $data_array = array(
       '@MSGTYPE' => 'PayConfirm',
       '@TOKEN' => '(unused)',
       '@VTVERIFY' => '(obsolete)',
@@ -60,34 +60,40 @@ class SaferpayTestForm extends FormBase {
       '@XID' => '',
     );
 
-    // Construct the URL for the Submit button.
+    /*
+     * Construct URL from response key.
+     */
     $response_url_key = \Drupal::state()->get('saferpay.return_url_key') ?: 'success';
-    switch($response_url_key){
+    switch ($response_url_key) {
       case 'success':
         $response_url = $request->query->get('SUCCESSLINK');
         break;
+
       case 'fail':
         $response_url = $request->query->get('FAILLINK');
         break;
+
       case 'back':
         $response_url = $request->query->get('BACKLINK');
         break;
+
       case 'notify_url':
         $response_url = $request->query->get('NOTIFYURL');
         break;
     }
 
-    /**
+    /*
      * Generate string from formatted XML string and array of Test Data.
      *
-     * The generated string will be appaneded to the response url to send data to the verification service. The format is from the official documentation.
+     * The generated string will be appended to the response url to send data to the verification service.
+     * The format is from the official documentation.
      */
     $data_string = SafeMarkup::format('<IDP MSGTYPE="@MSGTYPE" TOKEN="@TOKEN" VTVERIFY="@VTVERIFY" KEYID="@KEYID" ID="@ID" ACCOUNTID="@ACCOUNTID" PROVIDERID="@PROVIDERID" PROVIDERNAME="@PROVIDERNAME" PAYMENTMETHOD="@PAYMENTMETHOD" ORDERID="@ORDERID" AMOUNT="@AMOUNT" CURRENCY="@CURRENCY" IP="@IP" IPCOUNTRY="@IPCOUNTRY" CCCOUNTRY="@CCCOUNTRY" MPI_LIABILTYSHIFT="@MPI_LIABILTYSHIFT" MPI_TX_CAVV="@MPI_TX_CAVV" MPI_XID="@MPI_XID" ECI="@ECI" CAVV="@CAVV" XID="@XID" />',
-      $DATA
+      $data_array
     );
     $signature = \Drupal::state()->get('saferpay.signature') ?: Crypt::hashBase64($data_string);
 
-    // Build the response URL with the Data and Signature
+    // Build the response URL with the Data and Signature.
     $response_url .= '?DATA=' . urlencode($data_string) . '&SIGNATURE=' . $signature;
     $form['#action'] = $response_url;
     $form['actions']['#type'] = 'actions';
@@ -104,7 +110,6 @@ class SaferpayTestForm extends FormBase {
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-    drupal_set_message("Validate Form");
   }
 
 }

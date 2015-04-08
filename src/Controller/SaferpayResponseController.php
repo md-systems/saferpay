@@ -18,9 +18,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Saferpay Response Controller
- *
- * @package Drupal\payment_saferpay\Controller
+ * Saferpay Response Controller.
  */
 class SaferpayResponseController {
 
@@ -28,10 +26,10 @@ class SaferpayResponseController {
    * Page callback for processing the Saferpay MPI response.
    *
    * @param \Drupal\payment\Entity\Payment $payment
-   *  The payment entity type
+   *  The payment entity type.
    *
    * @return \Symfony\Component\HttpFoundation\RedirectResponse
-   *  Redirect Response
+   *  Redirect Response.
    */
   public function processMPIResponse(Payment $payment) {
     $data = simplexml_load_string($_GET['DATA']);
@@ -51,7 +49,7 @@ class SaferpayResponseController {
     // sure we're not running into this twice.
     if (!$saferpay->hasSessionData('mpi_session_id') && \Drupal::lock()->acquire('payment_saferpay_' . $payment->id())) {
 
-      $saferpay->setSessionData('mpi_session_id', (string)$data['MPI_SESSIONID']);
+      $saferpay->setSessionData('mpi_session_id', (string) $data['MPI_SESSIONID']);
       try {
         $saferpay->pay();
       }
@@ -79,13 +77,13 @@ class SaferpayResponseController {
    *  The payment entity type
    *
    * @return \Symfony\Component\HttpFoundation\RedirectResponse
-   *  Redirect Response
+   *  Redirect Response.
    */
   public function processSCDResponse(Payment $payment) {
     $scd_response = simplexml_load_string($_GET['DATA']);
     if ($scd_response['RESULT'] != 0) {
       drupal_set_message(t('Credit card verification failed: @error.', array('@error' => $scd_response['DESCRIPTION'])), 'error');
-      \Drupal::logger(t('Credit card verification failed: @error'),array('@error' => $scd_response['DESCRIPTION']))->warning('SaferpayResponseController.php');
+      \Drupal::logger(t('Credit card verification failed: @error'), array('@error' => $scd_response['DESCRIPTION']))->warning('SaferpayResponseController.php');
       return new RedirectResponse('payment/' . $payment->id());
     }
 
@@ -109,12 +107,12 @@ class SaferpayResponseController {
     $saferpay->setSettings($settings);
 
     // Store the card information in order.
-//    $card_info[$payment->id()]['card_ref_id'] = (string)$scd_response['CARDREFID'];
-//    $card_info[$payment->id()]['card_holder'] = (string)$_GET['CardHolder'];
-//    $card_info[$payment->id()]['card_number'] = substr((string)$data['CARDMASK'], -4);
-//    $card_info[$payment->id()]['expiry_month'] = (string)$data['EXPIRYMONTH'];
-//    $card_info[$payment->id()]['expiry_year'] = '20' . (string)$data['EXPIRYYEAR'];
-//    $card_info[$payment->id()]['card_type'] = $card_types[(string)$data['CARDTYPE']];
+    // $card_info[$payment->id()]['card_ref_id'] = (string) $scd_response['CARDREFID'];
+    // $card_info[$payment->id()]['card_holder'] = (string) $_GET['CardHolder'];
+    // $card_info[$payment->id()]['card_number'] = substr((string) $data['CARDMASK'], -4);
+    // $card_info[$payment->id()]['expiry_month'] = (string) $data['EXPIRYMONTH'];
+    // $card_info[$payment->id()]['expiry_year'] = '20' . (string) $data['EXPIRYYEAR'];
+    // $card_info[$payment->id()]['card_type'] = $card_types[(string) $data['CARDTYPE']];
 
     $saferpay->setSessionData('card_ref_id', (string)$scd_response['CARDREFID']);
     $saferpay->setSessionData('expiry_month', (string)$scd_response['EXPIRYMONTH']);
@@ -158,7 +156,7 @@ class SaferpayResponseController {
    * confirmation message (PayConfirm) by GET to this URL.
    *
    * @param \Symfony\Component\HttpFoundation\Request $request
-   *   Request
+   *   Request.
    * @param \Drupal\payment\Entity\PaymentInterface $payment
    *   The Payment Entity type.
    *
@@ -168,10 +166,14 @@ class SaferpayResponseController {
   public function processSuccessResponse(Request $request, PaymentInterface $payment) {
     $plugin_definition = $payment->getPaymentMethod()->getPluginDefinition();
 
-    // Sign the data and set up array with necessary data.
-    $pay_confirm_data = array('DATA' => $request->get('DATA'), 'SIGNATURE' => $request->get('SIGNATURE'), 'ACCOUNTID' => $plugin_definition['account_id']);
+    // Set up the data for the payment confirmation request.
+    $pay_confirm_data = array(
+      'DATA' => $request->get('DATA'),
+      'SIGNATURE' => $request->get('SIGNATURE'),
+      'ACCOUNTID' => $plugin_definition['account_id']
+    );
 
-     // Save the successful payment.
+    // Save the successful payment.
     $this->savePayment($payment, 'payment_success');
     $payment_config = \Drupal::configFactory()->getEditable('payment_saferpay.settings');
 
@@ -182,7 +184,7 @@ class SaferpayResponseController {
 
     // If the verification failed, return with an error.
     if (!(substr($verify_pay_confirm_callback, 0, 2) == 'OK')) {
-      \Drupal::logger(t('Payment verification failed: @error'),array('@error' => $verify_pay_confirm_callback))->warning('SaferpayResponseController.php');
+      \Drupal::logger(t('Payment verification failed: @error'), array('@error' => $verify_pay_confirm_callback))->warning('SaferpayResponseController.php');
       drupal_set_message(t('Payment verification failed: @error.', array('@error' => $verify_pay_confirm_callback)), 'error');
       return $this->savePayment($payment, 'payment_failed');
     }
@@ -196,13 +198,14 @@ class SaferpayResponseController {
       $settle_payment = \Drupal::httpClient()->get($payment_config->get('payment_link') . $payment_config->get('pay_complete'), array('query' => $pay_settle_data));
       $settle_payment_callback = (string) $settle_payment->getBody();
 
+      // If the response to our request is anything but OK the payment fails.
       if (!($settle_payment_callback == 'OK')) {
-        \Drupal::logger(t('Payment settlement failed: @error'),array('@error' => $settle_payment_callback))->warning('SaferpayResponseController.php');
+        \Drupal::logger(t('Payment settlement failed: @error'), array('@error' => $settle_payment_callback))->warning('SaferpayResponseController.php');
         drupal_set_message(t('Payment settlement failed: @error.', array('@error' => $settle_payment_callback)), 'error');
         return $this->savePayment($payment, 'payment_failed');
       }
     }
-
+    
     return $this->savePayment($payment, 'payment_success');
   }
 
@@ -210,12 +213,12 @@ class SaferpayResponseController {
    * URL to which the customer is to be forwarded to via browser redirect if the authorization attempt failed.
    *
    * @param \Symfony\Component\HttpFoundation\Request $request
-   *   Request
+   *   Request.
    * @param \Drupal\payment\Entity\PaymentInterface $payment
    *   The Payment Entity type.
    *
    * @return \Symfony\Component\HttpFoundation\Response
-   *  The response to the request
+   *  The response to the request.
    */
   public function processFailResponse(Request $request, PaymentInterface $payment) {
     drupal_set_message('Payment failed');
@@ -227,7 +230,7 @@ class SaferpayResponseController {
    * URL to which the customer is to be forwarded to via browser redirect if he aborts the transaction.
    *
    * @param \Symfony\Component\HttpFoundation\Request $request
-   *   Request
+   *   Request.
    * @param \Drupal\payment\Entity\PaymentInterface $payment
    *   The Payment Entity type.
    */
@@ -238,6 +241,8 @@ class SaferpayResponseController {
   }
 
   /**
+   * Called when NOTIFYURL is used.
+   *
    * Fully qualified URL which in case of successful authorization is called
    * directly by the saferpay server transmitting the confirmation message (PayConfirm)
    * by POST. Only standard ports (http port 80, https port 443) are allowed.
