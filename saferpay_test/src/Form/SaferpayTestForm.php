@@ -60,9 +60,7 @@ class SaferpayTestForm extends FormBase {
       '@XID' => '',
     );
 
-    /*
-     * Construct URL from response key.
-     */
+    // Construct URL from response key.
     $response_url_key = \Drupal::state()->get('saferpay.return_url_key') ?: 'success';
     switch ($response_url_key) {
       case 'success':
@@ -82,19 +80,18 @@ class SaferpayTestForm extends FormBase {
         break;
     }
 
-    /*
-     * Generate string from formatted XML string and array of Test Data.
-     *
-     * The generated string will be appended to the response url to send data to the verification service.
-     * The format is from the official documentation.
-     */
+    
+    // Generate string from formatted XML string and array of Test Data.
     $data_string = SafeMarkup::format('<IDP MSGTYPE="@MSGTYPE" TOKEN="@TOKEN" VTVERIFY="@VTVERIFY" KEYID="@KEYID" ID="@ID" ACCOUNTID="@ACCOUNTID" PROVIDERID="@PROVIDERID" PROVIDERNAME="@PROVIDERNAME" PAYMENTMETHOD="@PAYMENTMETHOD" ORDERID="@ORDERID" AMOUNT="@AMOUNT" CURRENCY="@CURRENCY" IP="@IP" IPCOUNTRY="@IPCOUNTRY" CCCOUNTRY="@CCCOUNTRY" MPI_LIABILTYSHIFT="@MPI_LIABILTYSHIFT" MPI_TX_CAVV="@MPI_TX_CAVV" MPI_XID="@MPI_XID" ECI="@ECI" CAVV="@CAVV" XID="@XID" />',
       $data_array
     );
+	// Generate the signature if it isn't set already (for testing purposes)
     $signature = \Drupal::state()->get('saferpay.signature') ?: Crypt::hashBase64($data_string);
 
     // Build the response URL with the Data and Signature.
     $response_url .= '?DATA=' . urlencode($data_string) . '&SIGNATURE=' . $signature;
+	
+	// Set up the form with the Response URL.
     $form['#action'] = $response_url;
     $form['actions']['#type'] = 'actions';
     $form['actions']['submit'] = array(

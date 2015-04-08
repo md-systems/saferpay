@@ -196,26 +196,26 @@ class SaferpayPaymentFormTest extends WebTestBase {
    * Tests succesfull Saferpay payment with wrong signature.
    */
   function testSaferpayWrongSignature() {
-  // Modifies the saferpay configuration for testing purposes.
-  $payment_config = \Drupal::configFactory()->getEditable('payment_saferpay.settings')->set('payment_link', $GLOBALS['base_root']);
-  \Drupal::state()->set('saferpay.signature', 'AAA');
-  $payment_config->save();
-
-  // Create saferpay payment
-  $this->drupalPostForm('node/' . $this->node->id(), array(), t('Pay'));
-
-  // Finish and save payment
-  $this->drupalPostForm(NULL, array(), t('Submit'));
-
-  // Check out the payment overview page
-  $this->drupalGet('admin/content/payment');
-  $this->assertText('Failed');
-  $this->assertNoText('Success');
-
-  // Check for detailed payment information
-  $this->drupalGet('payment/1');
-  $this->assertText('Failed');
-  $this->assertNoText('Success');
+    // Modifies the saferpay configuration for testing purposes.
+    $payment_config = \Drupal::configFactory()->getEditable('payment_saferpay.settings')->set('payment_link', $GLOBALS['base_root']);
+    \Drupal::state()->set('saferpay.signature', 'AAA');
+    $payment_config->save();
+    
+    // Create saferpay payment
+    $this->drupalPostForm('node/' . $this->node->id(), array(), t('Pay'));
+    
+    // Finish and save payment
+    $this->drupalPostForm(NULL, array(), t('Submit'));
+    
+    // Check out the payment overview page
+    $this->drupalGet('admin/content/payment');
+    $this->assertText('Failed');
+    $this->assertNoText('Success');
+    
+    // Check for detailed payment information
+    $this->drupalGet('payment/1');
+    $this->assertText('Failed');
+    $this->assertNoText('Success');
   }
 
   /**
