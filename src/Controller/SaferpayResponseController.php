@@ -26,10 +26,10 @@ class SaferpayResponseController {
    * Page callback for processing the Saferpay MPI response.
    *
    * @param \Drupal\payment\Entity\Payment $payment
-   *  The payment entity type.
+   *   The payment entity type.
    *
    * @return \Symfony\Component\HttpFoundation\RedirectResponse
-   *  Redirect Response.
+   *   Redirect Response.
    */
   public function processMPIResponse(Payment $payment) {
     $data = simplexml_load_string($_GET['DATA']);
@@ -74,10 +74,10 @@ class SaferpayResponseController {
    * Page callback for processing the Saferpay SCD response.
    *
    * @param \Drupal\payment\Entity\Payment $payment
-   *  The payment entity type
+   *   The payment entity type.
    *
    * @return \Symfony\Component\HttpFoundation\RedirectResponse
-   *  Redirect Response.
+   *   Redirect Response.
    */
   public function processSCDResponse(Payment $payment) {
     $scd_response = simplexml_load_string($_GET['DATA']);
@@ -114,9 +114,9 @@ class SaferpayResponseController {
     // $card_info[$payment->id()]['expiry_year'] = '20' . (string) $data['EXPIRYYEAR'];
     // $card_info[$payment->id()]['card_type'] = $card_types[(string) $data['CARDTYPE']];
 
-    $saferpay->setSessionData('card_ref_id', (string)$scd_response['CARDREFID']);
-    $saferpay->setSessionData('expiry_month', (string)$scd_response['EXPIRYMONTH']);
-    $saferpay->setSessionData('expiry_year', (string)$scd_response['EXPIRYYEAR']);
+    $saferpay->setSessionData('card_ref_id', (string) $scd_response['CARDREFID']);
+    $saferpay->setSessionData('expiry_month', (string) $scd_response['EXPIRYMONTH']);
+    $saferpay->setSessionData('expiry_year', (string) $scd_response['EXPIRYYEAR']);
 
     if (empty($config['use_mpi'])) {
       // Authorize and optionally settle the order immediately.
@@ -128,7 +128,7 @@ class SaferpayResponseController {
       $mpi_response = $saferpay->verifyEnrollment($scd_response);
 
       // Redirect to 3-D secure, if necessary.
-      if ((int)$mpi_response['RESULT'] == 0 && (int)$mpi_response['ECI'] == PAYMENT_SAFERPAY_ECI_3D_AUTHENTICATION) {
+      if ((int) $mpi_response['RESULT'] == 0 && (int) $mpi_response['ECI'] == PAYMENT_SAFERPAY_ECI_3D_AUTHENTICATION) {
         return new RedirectResponse($mpi_response['MPI_PA_LINK']);
       }
       else {
@@ -137,7 +137,7 @@ class SaferpayResponseController {
           drupal_set_message(t('Payments from credit cards without 3-D Secure support are not accepted.'), 'error');
         }
         // Authorize and optionally settle the order immediately.
-        $saferpay->setSessionData('mpi_session_id', (string)$scd_response['MPI_SESSIONID']);
+        $saferpay->setSessionData('mpi_session_id', (string) $scd_response['MPI_SESSIONID']);
         $saferpay->pay();
       }
     }
@@ -161,7 +161,7 @@ class SaferpayResponseController {
    *   The Payment Entity type.
    *
    * @return \Symfony\Component\HttpFoundation\Response
-   *  The response to the request
+   *   The response to the request.
    */
   public function processSuccessResponse(Request $request, PaymentInterface $payment) {
     $plugin_definition = $payment->getPaymentMethod()->getPluginDefinition();
@@ -205,7 +205,7 @@ class SaferpayResponseController {
         return $this->savePayment($payment, 'payment_failed');
       }
     }
-    
+
     return $this->savePayment($payment, 'payment_success');
   }
 
@@ -254,7 +254,7 @@ class SaferpayResponseController {
    * to add a shop session ID as GET parameter to the NOTIFYURL.
    *
    * @param \Symfony\Component\HttpFoundation\Request $request
-   *   Request
+   *   Request.
    * @param \Drupal\payment\Entity\PaymentInterface $payment
    *   The Payment Entity type.
    */
@@ -268,12 +268,12 @@ class SaferpayResponseController {
    * Saves success/cancelled/failed payment.
    *
    * @param \Drupal\payment\Entity\PaymentInterface $payment
-   *  Payment Interface
+   *   Payment Interface.
    * @param string $status
-   *  Payment status to set
+   *   Payment status to set.
    *
    * @return \Symfony\Component\HttpFoundation\RedirectResponse
-   *  The response to the request
+   *   The response to the request.
    */
   public function savePayment(PaymentInterface $payment, $status = 'payment_failed') {
     $payment->setPaymentStatus(\Drupal::service('plugin.manager.payment.status')

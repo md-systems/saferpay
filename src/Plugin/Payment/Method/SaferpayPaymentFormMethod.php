@@ -43,11 +43,12 @@ class SaferpayPaymentFormMethod extends PaymentMethodBase implements ContainerFa
   }
 
   /**
-   * Executes the Payment and returns the result
+   * Executes the Payment and returns the result.
    *
    * @return \Drupal\Payment\PaymentExecutionResult
+   *   Return with Payment Result.
    */
-  public function getPaymentExecutionResult(){
+  public function getPaymentExecutionResult() {
     /** @var \Drupal\payment\Entity\PaymentInterface $payment */
     $payment = $this->getPayment();
     $generator = \Drupal::urlGenerator();

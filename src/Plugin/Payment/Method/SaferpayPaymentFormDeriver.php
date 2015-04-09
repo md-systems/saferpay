@@ -56,21 +56,21 @@ class SaferpayPaymentFormDeriver extends DeriverBase implements ContainerDeriver
    * {@inheritdoc}
    */
   public function getDerivativeDefinitions($base_plugin_definition) {
-    /** @var \Drupal\payment\Entity\PaymentMethodConfigurationInterface[] $payment_methods */
+    // @var \Drupal\payment\Entity\PaymentMethodConfigurationInterface[] $payment_methods
     $payment_methods = $this->paymentMethodConfigurationStorage->loadMultiple();
     foreach ($payment_methods as $payment_method) {
       if ($payment_method->getPluginId() == 'payment_saferpay_payment_form') {
         /** @var \Drupal\payment_saferpay\Plugin\Payment\MethodConfiguration\SaferpayPaymentFormConfiguration $configuration_plugin */
         $configuration_plugin = $this->paymentMethodConfigurationManager->createInstance($payment_method->getPluginId(), $payment_method->getPluginConfiguration());
         $this->derivatives[$payment_method->id()] = array(
-            //'active' => $payment_method->status(),
-            'id' => 'payment_saferpay_payment_form:' . $payment_method->id(),
-            'account_id' => $configuration_plugin->getAccountId(),
-            'message_text' => '',
-            'message_text_format' => '',
-            'spPassword' => $configuration_plugin->getSpPassword(),
-            'settle_option' => $configuration_plugin->getSettleOption(),
-          ) + $base_plugin_definition;
+            // 'active' => $payment_method->status(),
+          'id' => 'payment_saferpay_payment_form:' . $payment_method->id(),
+          'account_id' => $configuration_plugin->getAccountId(),
+          'message_text' => '',
+          'message_text_format' => '',
+          'spPassword' => $configuration_plugin->getSpPassword(),
+          'settle_option' => $configuration_plugin->getSettleOption(),
+        ) + $base_plugin_definition;
       }
     }
 

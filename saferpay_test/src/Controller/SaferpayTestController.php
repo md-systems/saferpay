@@ -26,17 +26,17 @@ class SaferpayTestController {
   }
 
   /**
-   * For more documentation regarding this test controller see: \Drupal\payment_saferpay\README.txt
+   * More documentation about this test controller: \saferpay\README.txt.
    */
 
-  /***
+  /**
    * With CreatePayInit() a payment link can be generated.
    *
-   * @param \Symfony\Component\HttpFoundation\Request
-   *  The request
+   * @param \Symfony\Component\HttpFoundation\Request $request
+   *   The request.
    *
    * @return \Symfony\Component\HttpFoundation\Response
-   *  Response to the request
+   *   Response to the request.
    */
   public function createPayInit(Request $request = NULL) {
     return new Response(Url::fromRoute('saferpay_test.saferpay_test_form', array(), array(
@@ -44,17 +44,17 @@ class SaferpayTestController {
   }
 
   /**
-   * Simulates the Saferpay PayConfirm endpoint
+   * Simulates the Saferpay PayConfirm endpoint.
    *
-   * Verifies the digital signature of the confirmation message (MSGTYPE=PayConfirm)
+   * Verifies the digital signature of the confirmation message
    * returned to the shop via SUCCESSLINK or NOTIFYURL in order to ensure
    * that the response has not been manipulated.
    *
-   * @param \Symfony\Component\HttpFoundation\Request
-   *  The request
+   * @param \Symfony\Component\HttpFoundation\Request $request
+   *   The request.
    *
    * @return \Symfony\Component\HttpFoundation\Response
-   *  Response to the request
+   *   Response to the request.
    */
   public function verifyPayConfirm(Request $request = NULL) {
     $data_xml = simplexml_load_string($request->query->get('DATA'));
@@ -77,11 +77,11 @@ class SaferpayTestController {
   /**
    * Settles the payment.
    *
-   * @param \Symfony\Component\HttpFoundation\Request
-   *  The request
+   * @param \Symfony\Component\HttpFoundation\Request $request
+   *   The request.
    *
    * @return \Symfony\Component\HttpFoundation\Response
-   *  Response to the request
+   *   Response to the request.
    */
   public function payComplete(Request $request = NULL) {
     if($request->query->get('ACCOUNTID') == '99867-94913159')
