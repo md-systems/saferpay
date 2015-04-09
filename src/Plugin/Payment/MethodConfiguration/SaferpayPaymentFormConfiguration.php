@@ -12,6 +12,7 @@ use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\Core\StringTranslation\TranslationInterface;
+use Drupal\Core\Url;
 use Drupal\payment\Plugin\Payment\MethodConfiguration\PaymentMethodConfigurationBase;
 use Drupal\payment\Plugin\Payment\Status\PaymentStatusManagerInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -136,7 +137,7 @@ class SaferpayPaymentFormConfiguration extends PaymentMethodConfigurationBase im
    * Sets the Saferpay Settle Option.
    *
    * @param string $settle_option
-   *   Settle Option, Yes or No
+   *   Settle Option, Yes or No.
    *
    * @return \Drupal\payment_saferpay\Plugin\Payment\MethodConfiguration\SaferpayPaymentFormConfiguration
    *   The configuration object for the Saferpay Payment Form payment method plugin.
@@ -190,6 +191,11 @@ class SaferpayPaymentFormConfiguration extends PaymentMethodConfigurationBase im
 
   /**
    * Implements form validate callback for self::formElements().
+   *
+   * @param array $element
+   *   The form element.
+   * @param array $form
+   *   The form entity.
    */
   public function formElementsValidate(array $element, FormStateInterface $form_state, array $form) {
     $values = NestedArray::getValue($form_state->getValues(), $element['#parents']);
