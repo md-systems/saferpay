@@ -1,6 +1,7 @@
 name: Payment Saferpay
 type: module
 description: Saferpay (http://www.saferpay.com) integration of the Drupal Payment module.
+package: Payment
 core: 8.x
 
 dependencies:
