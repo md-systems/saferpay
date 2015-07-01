@@ -50,7 +50,7 @@ install:
   - cd $TRAVIS_BUILD_DIR/..
   - git clone --depth 1 --branch 8.0.x http://git.drupal.org/project/drupal.git
   - cd drupal/modules
-  - git clone --depth 1 --branch 8.x-1.x http://git.drupal.org/project/plugin_selector.git
+  - git clone --depth 1 --branch 8.x-2.x http://git.drupal.org/project/plugin.git
   - git clone --depth 1 --branch 8.x-3.x http://git.drupal.org/project/currency.git
   - git clone --depth 1 --branch 8.x-2.x http://git.drupal.org/project/payment.git
   # Restart apache and test it
