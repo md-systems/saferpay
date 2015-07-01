@@ -29,7 +29,8 @@ class SaferpayPaymentFormTest extends WebTestBase {
     // @todo: Check if you need these
     'node',
     'field_ui',
-    'config'
+    'config',
+    'dblog',
   );
 
   /**
@@ -98,7 +99,8 @@ class SaferpayPaymentFormTest extends WebTestBase {
       'access content',
       'access administration pages',
       'access user profiles',
-      'payment.payment.view.any'
+      'payment.payment.view.any',
+      'access site reports',
     ));
     $this->drupalLogin($this->admin_user);
   }
@@ -120,6 +122,16 @@ class SaferpayPaymentFormTest extends WebTestBase {
       'plugin_form[spPassword]' => 'XAjc3Kna',
     );
     $this->drupalPostForm('admin/config/services/payment/method/configuration/payment_saferpay_payment_form', $saferpay_configuration, t('Save'));
+
+    $this->drupalGet('admin/config/services/payment/method/configuration/payment_saferpay_payment_form');
+    // Test the debug checkbox.
+    $this->assertNoFieldChecked('edit-plugin-form-debug');
+    $edit = [
+      'plugin_form[debug]' => TRUE,
+    ];
+    $this->drupalPostForm(NULL, $edit, t('Save'));
+    $this->drupalGet('admin/config/services/payment/method/configuration/payment_saferpay_payment_form');
+    $this->assertFieldChecked('edit-plugin-form-debug');
 
     // Create saferpay payment.
     $this->drupalPostForm('node/' . $this->node->id(), NULL, t('Pay'));
@@ -166,6 +178,10 @@ class SaferpayPaymentFormTest extends WebTestBase {
     $this->assertText('CHF 123.00');
     $this->assertText('CHF 246.00');
     $this->assertText('Completed');
+
+    // Check the log for the response debug.
+    $this->drupalGet('/admin/reports/dblog');
+    $this->assertText('Payment success response:');
   }
   /**
    * Tests failed Saferpay payment.
@@ -174,23 +190,28 @@ class SaferpayPaymentFormTest extends WebTestBase {
     // Modifies the saferpay configuration for testing purposes.
     $payment_config = \Drupal::configFactory()->getEditable('payment_saferpay.settings')->set('payment_link', $GLOBALS['base_root']);
     $payment_config->save();
+    $this->drupalPostForm('admin/config/services/payment/method/configuration/payment_saferpay_payment_form', ['plugin_form[debug]' => TRUE], t('Save'));
 
-    // Create saferpay payment
+    // Create saferpay payment.
     \Drupal::state()->set('saferpay.return_url_key', 'fail');
     $this->drupalPostForm('node/' . $this->node->id(), array(), t('Pay'));
 
-    // Finish and save payment
+    // Finish and save payment.
     $this->drupalPostForm(NULL, array(), t('Submit'));
 
-    // Check out the payment overview page
+    // Check out the payment overview page.
     $this->drupalGet('admin/content/payment');
     $this->assertText('Failed');
     $this->assertNoText('Success');
 
-    // Check for detailed payment information
+    // Check for detailed payment information.
     $this->drupalGet('payment/1');
     $this->assertText('Failed');
     $this->assertNoText('Success');
+
+    // Check the log for the response debug.
+    $this->drupalGet('/admin/reports/dblog');
+    $this->assertText('Payment fail response:');
   }
   /**
    * Tests succesfull Saferpay payment with wrong signature.
@@ -200,6 +221,7 @@ class SaferpayPaymentFormTest extends WebTestBase {
     $payment_config = \Drupal::configFactory()->getEditable('payment_saferpay.settings')->set('payment_link', $GLOBALS['base_root']);
     \Drupal::state()->set('saferpay.signature', 'AAA');
     $payment_config->save();
+    $this->drupalPostForm('admin/config/services/payment/method/configuration/payment_saferpay_payment_form', ['plugin_form[debug]' => TRUE], t('Save'));
 
     // Create saferpay payment
     $this->drupalPostForm('node/' . $this->node->id(), array(), t('Pay'));
@@ -216,6 +238,10 @@ class SaferpayPaymentFormTest extends WebTestBase {
     $this->drupalGet('payment/1');
     $this->assertText('Failed');
     $this->assertNoText('Success');
+
+    // Check the log for the response debug.
+    $this->drupalGet('/admin/reports/dblog');
+    $this->assertText('Payment fail response:');
   }
 
   /**
