@@ -15,7 +15,7 @@ payment.plugin_configuration.payment_method_configuration.payment_saferpay_payme
       label: Settle option
 
 payment_saferpay.settings:
-  type: mapping
+  type: config_object
   label: Saferpay settings
   mapping:
     payment_link:
