@@ -10,7 +10,7 @@ namespace Drupal\payment_saferpay\Plugin\Payment\Method;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\Core\Url;
 use Drupal\currency\Entity\Currency;
-use Drupal\payment\PaymentExecutionResult;
+use Drupal\payment\OperationResult;
 use Drupal\payment\Plugin\Payment\Method\PaymentMethodBase;
 use Drupal\payment\Response\Response;
 use Drupal\Component\Plugin\ConfigurablePluginInterface;
@@ -45,7 +45,7 @@ class SaferpayPaymentFormMethod extends PaymentMethodBase implements ContainerFa
   /**
    * Executes the Payment and returns the result.
    *
-   * @return \Drupal\Payment\PaymentExecutionResult
+   * @return \Drupal\Payment\OperationResult
    *   Return with Payment Result.
    */
   public function getPaymentExecutionResult() {
@@ -76,7 +76,7 @@ class SaferpayPaymentFormMethod extends PaymentMethodBase implements ContainerFa
     $saferpay_callback = \Drupal::httpClient()->get($payment_link, array('query' => $payment_data));
     $saferpay_redirect_url = $saferpay_callback->getBody();
     $response = new Response(Url::fromUri($saferpay_redirect_url));
-    return new PaymentExecutionResult($response);
+    return new OperationResult($response);
 }
 
   /**
