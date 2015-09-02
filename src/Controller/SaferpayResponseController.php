@@ -27,11 +27,13 @@ class SaferpayResponseController {
    *
    * @param \Drupal\payment\Entity\Payment $payment
    *   The payment entity type.
+   * @param \Symfony\Component\HttpFoundation\Request $request
+   *   The request from the server.
    *
    * @return \Symfony\Component\HttpFoundation\RedirectResponse
    *   Redirect Response.
    */
-  public function processMPIResponse(Payment $payment) {
+  public function processMPIResponse(Payment $payment, Request $request) {
     $data = simplexml_load_string($_GET['DATA']);
     if ($data['RESULT'] != 0) {
       drupal_set_message(t('Payment failed: @message', array('@message' => $data['MESSAGE'])));
@@ -75,15 +77,24 @@ class SaferpayResponseController {
    *
    * @param \Drupal\payment\Entity\Payment $payment
    *   The payment entity type.
+   * @param \Symfony\Component\HttpFoundation\Request $request
+   *   The request from the server.
    *
    * @return \Symfony\Component\HttpFoundation\RedirectResponse
    *   Redirect Response.
    */
-  public function processSCDResponse(Payment $payment) {
+  public function processSCDResponse(Payment $payment, Request $request) {
     $scd_response = simplexml_load_string($_GET['DATA']);
     if ($scd_response['RESULT'] != 0) {
       drupal_set_message(t('Credit card verification failed: @error.', array('@error' => $scd_response['DESCRIPTION'])), 'error');
-      \Drupal::logger(t('Credit card verification failed: @error'), array('@error' => $scd_response['DESCRIPTION']))->warning('SaferpayResponseController.php');
+      if (\Drupal::config('payment.payment_method_configuration.payment_saferpay_payment_form')->get('pluginConfiguration')['debug']) {
+        if (\Drupal::moduleHandler()->moduleExists('past')) {
+          past_event_save('saferpay', 'response_fail', 'Fail response - Payment ' . $payment->id() . ': POST data', ['POST' => $request->request->all(), 'Payment' => $payment]);
+        }
+        else {
+          \Drupal::logger('saferpay')->debug(t('Payment fail response: @response', ['@response' => implode(', ', $request->request->all())]));
+        }
+      }
       return new RedirectResponse('payment/' . $payment->id());
     }
 
@@ -184,7 +195,14 @@ class SaferpayResponseController {
 
     // If the verification failed, return with an error.
     if (!(substr($verify_pay_confirm_callback, 0, 2) == 'OK')) {
-      \Drupal::logger(t('Payment verification failed: @error'), array('@error' => $verify_pay_confirm_callback))->warning('SaferpayResponseController.php');
+      if (\Drupal::config('payment.payment_method_configuration.payment_saferpay_payment_form')->get('pluginConfiguration')['debug']) {
+        if (\Drupal::moduleHandler()->moduleExists('past')) {
+          past_event_save('saferpay', 'response_fail', 'Fail response - Payment ' . $payment->id() . ': POST data', ['POST' => $request->request->all(), 'Payment' => $payment]);
+        }
+        else {
+          \Drupal::logger('saferpay')->debug(t('Payment fail response: @response', ['@response' => implode(', ', $request->request->all())]));
+        }
+      }
       drupal_set_message(t('Payment verification failed: @error.', array('@error' => $verify_pay_confirm_callback)), 'error');
       return $this->savePayment($payment, 'payment_failed');
     }
@@ -200,9 +218,24 @@ class SaferpayResponseController {
 
       // If the response to our request is anything but OK the payment fails.
       if (!($settle_payment_callback == 'OK')) {
-        \Drupal::logger(t('Payment settlement failed: @error'), array('@error' => $settle_payment_callback))->warning('SaferpayResponseController.php');
+        if (\Drupal::config('payment.payment_method_configuration.payment_saferpay_payment_form')->get('pluginConfiguration')['debug']) {
+          if (\Drupal::moduleHandler()->moduleExists('past')) {
+            past_event_save('saferpay', 'response_fail', 'Fail response - Payment ' . $payment->id() . ': POST data', ['POST' => $request->request->all(), 'Payment' => $payment]);
+          }
+          else {
+            \Drupal::logger('saferpay')->debug(t('Payment fail response: @response', ['@response' => implode(', ', $request->request->all())]));
+          }
+        }
         drupal_set_message(t('Payment settlement failed: @error.', array('@error' => $settle_payment_callback)), 'error');
         return $this->savePayment($payment, 'payment_failed');
+      }
+    }
+    if (\Drupal::config('payment.payment_method_configuration.payment_saferpay_payment_form')->get('pluginConfiguration')['debug']) {
+      if (\Drupal::moduleHandler()->moduleExists('past')) {
+        past_event_save('saferpay', 'response_success', 'Success response - Payment ' . $payment->id() . ': POST data', ['POST' => $request->request->all(), 'Payment' => $payment]);
+      }
+      else {
+        \Drupal::logger('saferpay')->debug(t('Payment success response: @response', ['@response' => implode(', ', $request->request->all())]));
       }
     }
 
@@ -222,7 +255,14 @@ class SaferpayResponseController {
    */
   public function processFailResponse(Request $request, PaymentInterface $payment) {
     drupal_set_message('Payment failed');
-    \Drupal::logger('Payment settlement failed')->warning('SaferpayResponseController.php');
+    if (\Drupal::config('payment.payment_method_configuration.payment_saferpay_payment_form')->get('pluginConfiguration')['debug']) {
+      if (\Drupal::moduleHandler()->moduleExists('past')) {
+        past_event_save('saferpay', 'response_fail', 'Fail response - Payment ' . $payment->id() . ': POST data', ['POST' => $request->request->all(), 'Payment' => $payment]);
+      }
+      else {
+        \Drupal::logger('saferpay')->debug(t('Payment fail response: @response', ['@response' => implode(', ', $request->request->all())]));
+      }
+    }
     return $this->savePayment($payment, 'payment_failed');
   }
 
@@ -237,7 +277,14 @@ class SaferpayResponseController {
   public function processBackResponse(Request $request, PaymentInterface $payment) {
     $this->savePayment($payment, 'payment_cancelled');
     drupal_set_message('Payment cancelled');
-    \Drupal::logger('Payment cancelled')->alert('SaferpayResponseController.php');
+    if (\Drupal::config('payment.payment_method_configuration.payment_saferpay_payment_form')->get('pluginConfiguration')['debug']) {
+      if (\Drupal::moduleHandler()->moduleExists('past')) {
+        past_event_save('saferpay', 'response_cancel', 'Cancel response - Payment ' . $payment->id() . ': POST data', ['POST' => $request->request->all(), 'Payment' => $payment]);
+      }
+      else {
+        \Drupal::logger('saferpay')->debug(t('Payment cancel response: @response', ['@response' => implode(', ', $request->request->all())]));
+      }
+    }
   }
 
   /**
@@ -260,7 +307,14 @@ class SaferpayResponseController {
    */
   public function processNotifyResponse(Request $request, PaymentInterface $payment) {
     $this->savePayment($payment, 'payment_config');
-
+    if (\Drupal::config('payment.payment_method_configuration.payment_saferpay_payment_form')->get('pluginConfiguration')['debug']) {
+      if (\Drupal::moduleHandler()->moduleExists('past')) {
+        past_event_save('saferpay', 'response_notify', 'Notify response - Payment ' . $payment->id() . ': POST data', ['POST' => $request->request->all(), 'Payment' => $payment]);
+      }
+      else {
+        \Drupal::logger('saferpay')->debug(t('Payment notify response: @response', ['@response' => implode(', ', $request->request->all())]));
+      }
+    }
     // @todo: Logger & drupal_set_message payment config.
   }
 

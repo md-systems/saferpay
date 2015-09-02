@@ -80,6 +80,7 @@ class SaferpayPaymentFormConfiguration extends PaymentMethodConfigurationBase im
       'account_id' => '99867-94913159',
       'spPassword' => 'XAjc3Kna',
       'settle_option' => TRUE,
+      'debug' => FALSE,
     );
   }
 
@@ -159,6 +160,23 @@ class SaferpayPaymentFormConfiguration extends PaymentMethodConfigurationBase im
   }
 
   /**
+   * En/disables logging the response from Saferpay.
+   *
+   * @param bool $state
+   *   Whether debugging should be dis/enabled.
+   */
+  public function setDebug($state = TRUE) {
+    $this->configuration['debug'] = $state;
+  }
+
+  /**
+   * Returns the logging setting for Saferpay.
+   */
+  public function getDebug() {
+    return $this->configuration['debug'];
+  }
+
+  /**
    * {@inheritdoc}
    */
   public function buildConfigurationForm(array $form, FormStateInterface $form_state) {
@@ -186,6 +204,12 @@ class SaferpayPaymentFormConfiguration extends PaymentMethodConfigurationBase im
       '#default_value' => $this->getSettleOption(),
     );
 
+    $form['debug'] = array(
+      '#type' => 'checkbox',
+      '#title' => 'Log response from Postfinance server',
+      '#default_value' => $this->getDebug(),
+    );
+
     return $form;
   }
 
@@ -202,7 +226,8 @@ class SaferpayPaymentFormConfiguration extends PaymentMethodConfigurationBase im
 
     $this->setAccountId($values['account_id'])
       ->setSpPassword($values['spPassword'])
-      ->setSettleOption($values['settle_option']);
+      ->setSettleOption($values['settle_option'])
+      ->setDebug($values['debug']);
   }
 
 }

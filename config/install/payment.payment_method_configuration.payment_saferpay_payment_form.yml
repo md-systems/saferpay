@@ -8,5 +8,6 @@ pluginConfiguration:
   account_id: 99867-94913159
   spPassword: XAjc3Kna
   settle_option: 1
+  debug: FALSE
 pluginId: payment_saferpay_payment_form
 status: true
